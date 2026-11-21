@@ -26,6 +26,14 @@
             app:summary="@string/set_hide_collaborators_desc"
             app:title="@string/set_hide_collaborators" />
 
+        <!-- WhaleSong: playlist auto-backup (Android 10 and later). -->
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:isPreferenceVisible="@bool/ws_is_q_or_later"
+            app:key="@string/ws_set_key_backup_playlists"
+            app:summary="@string/ws_set_backup_playlists_desc"
+            app:title="@string/ws_set_backup_playlists" />
+
     </PreferenceCategory>
 
     <PreferenceCategory app:title="@string/set_images">

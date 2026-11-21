@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Copyright (c) 2026 crunchbank (WhaleSong). Licensed under the GNU General Public License,
+    version 3 or (at your option) any later version.
+-->
+<resources>
+    <bool name="ws_is_q_or_later">false</bool>
+</resources>

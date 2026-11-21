@@ -10,4 +10,7 @@
     <string name="ws_lbl_plays">Plays</string>
     <string name="ws_lbl_unplayed">Unplayed</string>
     <string name="ws_lng_unplayed_empty">You have listened to every song.</string>
+    <string name="ws_set_key_backup_playlists" translatable="false">ws_auto_backup_playlists</string>
+    <string name="ws_set_backup_playlists">Back up playlists</string>
+    <string name="ws_set_backup_playlists_desc">Keep a copy of each playlist as an .m3u file in the Music folder</string>
 </resources>
