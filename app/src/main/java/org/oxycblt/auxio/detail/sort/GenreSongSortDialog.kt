@@ -12,6 +12,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
+ * Modifications copyright (c) 2026 crunchbank (WhaleSong): offers the "Plays" sort.
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
@@ -59,6 +61,7 @@ class GenreSongSortDialog : SortDialog() {
             Sort.Mode.ByAlbum,
             Sort.Mode.ByDate,
             Sort.Mode.ByDuration,
+            Sort.Mode.ByPlays,
         )
 
     private fun updateGenre(genre: Genre?) {

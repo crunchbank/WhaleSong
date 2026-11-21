@@ -12,6 +12,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
+ * Modifications copyright (c) 2026 crunchbank (WhaleSong): play a song from a plain list.
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
@@ -60,6 +62,9 @@ interface PlaybackCommand {
         fun songFromGenre(song: Song, genre: Genre?, shuffle: ShuffleMode): PlaybackCommand?
 
         fun songFromPlaylist(song: Song, playlist: Playlist, shuffle: ShuffleMode): PlaybackCommand?
+
+        /** Play [song] from a list with no parent, such as WhaleSong's Unplayed list. */
+        fun songFromList(song: Song, songs: List<Song>, shuffle: ShuffleMode): PlaybackCommand?
 
         fun all(shuffle: ShuffleMode): PlaybackCommand?
 
@@ -116,6 +121,9 @@ constructor(
 
     override fun songFromPlaylist(song: Song, playlist: Playlist, shuffle: ShuffleMode) =
         newCommand(song, playlist, playlist.songs, shuffle)
+
+    override fun songFromList(song: Song, songs: List<Song>, shuffle: ShuffleMode) =
+        if (song in songs) newCommand(song, null, songs, shuffle) else null
 
     override fun all(shuffle: ShuffleMode) = newCommand(null, shuffle)
 

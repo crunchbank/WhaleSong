@@ -12,7 +12,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * Modifications copyright (c) 2026 crunchbank (WhaleSong): normal debug logging for the fork.
+ * Modifications copyright (c) 2026 crunchbank (WhaleSong): normal debug logging for the fork;
+ * play counts load at startup.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
@@ -31,6 +32,7 @@ import org.oxycblt.auxio.home.HomeSettings
 import org.oxycblt.auxio.image.ImageSettings
 import org.oxycblt.auxio.playback.PlaybackSettings
 import org.oxycblt.auxio.ui.UISettings
+import org.oxycblt.auxio.whale.plays.PlayCounts
 import timber.log.Timber
 
 /**
@@ -52,6 +54,7 @@ class Auxio : Application() {
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }
+        PlayCounts.init(this)
 
         // Migrate any settings that may have changed in an app update.
         imageSettings.migrate()

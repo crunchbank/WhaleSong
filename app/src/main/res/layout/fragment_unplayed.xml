@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Copyright (c) 2026 crunchbank (WhaleSong). Licensed under the GNU General Public License,
+    version 3 or (at your option) any later version.
+    WhaleSong: the Unplayed list.
+-->
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurface"
+    android:transitionGroup="true">
+
+    <org.oxycblt.auxio.ui.CoordinatorAppBarLayout
+        android:id="@+id/unplayed_appbar"
+        style="@style/Widget.Auxio.AppBarLayout"
+        app:liftOnScroll="true"
+        app:liftOnScrollTargetViewId="@id/unplayed_recycler">
+
+        <org.oxycblt.auxio.ui.MultiToolbar
+            android:id="@+id/unplayed_toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_scrollFlags="scroll|enterAlways">
+
+            <org.oxycblt.auxio.ui.AuxioToolbar
+                android:id="@+id/unplayed_normal_toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:menu="@menu/toolbar_unplayed"
+                app:navigationIcon="@drawable/ic_back_24"
+                app:title="@string/ws_lbl_unplayed" />
+
+            <org.oxycblt.auxio.ui.AuxioToolbar
+                android:id="@+id/unplayed_selection_toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                app:menu="@menu/toolbar_selection"
+                app:navigationIcon="@drawable/ic_close_24" />
+
+        </org.oxycblt.auxio.ui.MultiToolbar>
+
+    </org.oxycblt.auxio.ui.CoordinatorAppBarLayout>
+
+    <FrameLayout
+        android:id="@+id/unplayed_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior">
+
+        <org.oxycblt.auxio.list.recycler.AuxioRecyclerView
+            android:id="@+id/unplayed_recycler"
+            style="@style/Widget.Auxio.RecyclerView.Grid"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            tools:listitem="@layout/item_song" />
+
+        <TextView
+            android:id="@+id/unplayed_empty"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:padding="@dimen/spacing_medium"
+            android:text="@string/ws_lng_unplayed_empty"
+            android:textAppearance="?attr/textAppearanceBodyLarge"
+            android:textColor="?android:attr/textColorSecondary"
+            android:visibility="gone" />
+
+    </FrameLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

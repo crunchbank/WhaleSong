@@ -12,6 +12,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
+ * Modifications copyright (c) 2026 crunchbank (WhaleSong): play a song from a plain list.
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
@@ -420,6 +422,17 @@ constructor(
     fun shuffle(songs: List<Song>) {
         L.d("Shuffling ${songs.size} songs")
         playImpl(commandFactory.songs(songs, ShuffleMode.ON))
+    }
+
+    /**
+     * Play [song] from the list [from], keeping its order (WhaleSong's Unplayed list).
+     *
+     * @param song The [Song] to start with.
+     * @param from The [Song]s to play.
+     */
+    fun play(song: Song, from: List<Song>) {
+        L.d("Playing $song from a list of ${from.size} songs")
+        playImpl(commandFactory.songFromList(song, from, ShuffleMode.IMPLICIT))
     }
 
     private fun playImpl(command: PlaybackCommand?) {

@@ -12,6 +12,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
+ * Modifications copyright (c) 2026 crunchbank (WhaleSong): menu entry for the Unplayed list.
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
@@ -191,6 +193,11 @@ class HomeFragment : SelectionFragment<FragmentHomeBinding>() {
             R.id.action_search -> {
                 L.d("Navigating to search")
                 findNavController().navigateSafe(HomeFragmentDirections.search())
+                true
+            }
+            R.id.action_unplayed -> {
+                L.d("Navigating to the Unplayed list")
+                findNavController().navigateSafe(HomeFragmentDirections.showUnplayed())
                 true
             }
             R.id.action_settings -> {

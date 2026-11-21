@@ -14,6 +14,12 @@
         android:title="@string/lbl_sort"
         app:showAsAction="ifRoom" />
 
+    <!-- WhaleSong: songs never listened to past the counts-as-played point. -->
+    <item
+        android:id="@+id/action_unplayed"
+        android:title="@string/ws_lbl_unplayed"
+        app:showAsAction="never" />
+
     <item
         android:id="@+id/action_settings"
         android:title="@string/set_root_title"

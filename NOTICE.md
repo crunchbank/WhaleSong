@@ -24,5 +24,8 @@ The git history records every change, with its author and date. In summary, base
 | `Auxio.kt`, `util/CopyleftNoticeTree.kt` (unused) | Debug builds log normally; the copyleft warning Auxio logs for repackaged builds isn't planted, as WhaleSong is an open-source fork. |
 | `patches/media-remove-stale-hagc-argument.patch` (new) | Fix for Auxio's pinned ExoPlayer fork (`media/` submodule at 717bfe2c04), which doesn't compile: a merge left a removed "HAGC" argument in `ProgressiveMediaSource`. Apply it after updating submodules. |
 | `README.md`, `NOTICE.md` | WhaleSong README (replaces Auxio's) and this file. |
+| `whale/plays/` (new: `PlayCounts.kt`, `PlayCounter.kt`, `UnplayedFragment.kt`, `UnplayedViewModel.kt`), `playback/service/ExoPlaybackStateHolder.kt`, `Auxio.kt` | Play counts: the playback service counts a play once at least half of a song has been heard (time actually playing, so it works with the screen off; pausing and seeking ahead don't count). Counts are kept by song in a private database. |
+| `list/sort/Sort.kt`, `IntegerTable.kt`, `home/sort/{Song,Album,Artist,Genre}SortDialog.kt`, `detail/sort/{Artist,Genre}SongSortDialog.kt` | "Plays" sort order (most or least played) for songs, albums, artists and genres. WhaleSong's integer codes start at 0xB100. |
+| `res/layout/fragment_unplayed.xml`, `res/menu/toolbar_unplayed.xml` (new), `res/menu/toolbar_home.xml`, `res/navigation/inner.xml`, `home/HomeFragment.kt`, `playback/PlaybackViewModel.kt`, `playback/state/PlaybackCommand.kt` | Unplayed: a list, opened from the home menu, of songs never played past the counts-as-played point, newest added first, with Play and Shuffle. |
 
 "Auxio" is the name of the original project. WhaleSong is not affiliated with or endorsed by it.

@@ -12,6 +12,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
+ * Modifications copyright (c) 2026 crunchbank (WhaleSong): "Plays" sort, by play count.
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
@@ -20,6 +22,7 @@ package org.oxycblt.auxio.list.sort
 
 import org.oxycblt.auxio.IntegerTable
 import org.oxycblt.auxio.R
+import org.oxycblt.auxio.whale.plays.PlayCounts
 import org.oxycblt.musikr.Album
 import org.oxycblt.musikr.Artist
 import org.oxycblt.musikr.Genre
@@ -354,6 +357,45 @@ data class Sort(val mode: Mode, val direction: Direction) {
             }
         }
 
+        /** By how many times each was played (see [PlayCounts]); WhaleSong's "Plays" sort. */
+        data object ByPlays : Mode {
+            override val intCode = IntegerTable.SORT_BY_PLAYS
+            override val stringRes = R.string.ws_lbl_plays
+
+            override fun sortSongs(songs: MutableList<Song>, direction: Direction) {
+                songs.sortBy { it.name }
+                songs.sortByDescending { PlayCounts.lastPlayedMs(it) }
+                when (direction) {
+                    Direction.ASCENDING -> songs.sortBy { PlayCounts.count(it) }
+                    Direction.DESCENDING -> songs.sortByDescending { PlayCounts.count(it) }
+                }
+            }
+
+            override fun sortAlbums(albums: MutableList<Album>, direction: Direction) {
+                albums.sortBy { it.name }
+                when (direction) {
+                    Direction.ASCENDING -> albums.sortBy { PlayCounts.count(it) }
+                    Direction.DESCENDING -> albums.sortByDescending { PlayCounts.count(it) }
+                }
+            }
+
+            override fun sortArtists(artists: MutableList<Artist>, direction: Direction) {
+                artists.sortBy { it.name }
+                when (direction) {
+                    Direction.ASCENDING -> artists.sortBy { PlayCounts.count(it) }
+                    Direction.DESCENDING -> artists.sortByDescending { PlayCounts.count(it) }
+                }
+            }
+
+            override fun sortGenres(genres: MutableList<Genre>, direction: Direction) {
+                genres.sortBy { it.name }
+                when (direction) {
+                    Direction.ASCENDING -> genres.sortBy { PlayCounts.count(it) }
+                    Direction.DESCENDING -> genres.sortByDescending { PlayCounts.count(it) }
+                }
+            }
+        }
+
         data object ByDateAdded : Mode {
             override val intCode = IntegerTable.SORT_BY_DATE_ADDED
             override val stringRes = R.string.lbl_date_added
@@ -387,6 +429,7 @@ data class Sort(val mode: Mode, val direction: Direction) {
                     ByDisc.intCode -> ByDisc
                     ByTrack.intCode -> ByTrack
                     ByDateAdded.intCode -> ByDateAdded
+                    ByPlays.intCode -> ByPlays
                     else -> null
                 }
         }
