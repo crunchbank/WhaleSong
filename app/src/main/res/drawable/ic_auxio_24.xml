@@ -1,3 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Copyright (c) 2026 crunchbank (WhaleSong). Licensed under the GNU General Public License,
+    version 3 or (at your option) any later version.
+    WhaleSong icon: a humpback whale fluke rising from the waves.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
@@ -5,8 +11,18 @@
     android:viewportWidth="24"
     android:viewportHeight="24">
     <path
+        android:fillColor="@android:color/white"
+        android:pathData="M10.3,16.6 C10.9,14.6 11.2,12.6 11.3,10.9 C9.4,10.5 6.2,9.3 3.4,5.9 C5.6,5.7 7.6,6.1 9.1,6.8 C10.2,7.3 11.3,8 12,8.9 C12.7,8 13.8,7.3 14.9,6.8 C16.4,6.1 18.4,5.7 20.6,5.9 C17.8,9.3 14.6,10.5 12.7,10.9 C12.8,12.6 13.1,14.6 13.7,16.6 Z" />
+    <path
         android:fillColor="@android:color/transparent"
-        android:pathData="M13 4l4 4m-4-4v13m0 0l-3 3-3-3 3-3"
+        android:pathData="M3,17.4 q2.25,-2 4.5,0 t4.5,0 t4.5,0 t4.5,0"
+        android:strokeWidth="2"
+        android:strokeColor="@android:color/white"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M7.5,20.9 q2.25,-1.6 4.5,0 t4.5,0"
         android:strokeWidth="2"
         android:strokeColor="@android:color/white"
         android:strokeLineCap="round"

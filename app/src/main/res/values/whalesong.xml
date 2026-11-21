@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Copyright (c) 2026 crunchbank (WhaleSong). Licensed under the GNU General Public License,
+    version 3 or (at your option) any later version.
+    Strings for WhaleSong's own features.
+-->
+<resources>
+    <string name="ws_author_name" translatable="false">crunchbank</string>
+    <string name="ws_based_on_auxio">Based on Auxio</string>
+    <string name="ws_lbl_plays">Plays</string>
+    <string name="ws_lbl_unplayed">Unplayed</string>
+    <string name="ws_lng_unplayed_empty">You have listened to every song.</string>
+</resources>

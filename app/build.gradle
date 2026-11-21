@@ -15,9 +15,10 @@ android {
     namespace "org.oxycblt.auxio"
 
     defaultConfig {
-        applicationId namespace
-        versionName "4.1.5"
-        versionCode 75
+        // WhaleSong: its own app ID and version numbers (1.0 = version code 100).
+        applicationId "io.github.crunchbank.whalesong"
+        versionName "1.0"
+        versionCode 100
 
         minSdk min_sdk
         // randomly flickers between deprecated and required depending on what mood my gradle is in

@@ -181,7 +181,7 @@
                         style="@style/Widget.Auxio.TextView.Icon.Clickable"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/lbl_author_name"
+                        android:text="@string/ws_author_name"
                         app:drawableStartCompat="@drawable/ic_person_24"
                         app:drawableTint="?attr/colorControlNormal"
                         app:layout_constraintEnd_toEndOf="parent"
@@ -193,8 +193,8 @@
                         style="@style/Widget.Auxio.TextView.Icon.Clickable"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/lbl_donate"
-                        app:drawableStartCompat="@drawable/ic_donate_24"
+                        android:text="@string/ws_based_on_auxio"
+                        app:drawableStartCompat="@drawable/ic_code_24"
                         app:drawableTint="?attr/colorControlNormal"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
@@ -205,64 +205,6 @@
             </com.google.android.material.card.MaterialCardView>
 
 
-
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_medium">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical"
-                    android:paddingBottom="@dimen/spacing_tiny">
-
-                    <TextView
-                        android:id="@+id/about_supporters"
-                        style="@style/Widget.Auxio.TextView.Header"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/lbl_supporters"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent" />
-
-                    <TextView
-                        android:id="@+id/about_supporters_bkkellyh"
-                        style="@style/Widget.Auxio.TextView.Icon.Clickable"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/sup_bkkellyh"
-                        android:textAppearance="?attr/textAppearanceTitleMediumEmphasized"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/about_licenses" />
-
-                    <TextView
-                        android:id="@+id/about_supporters_gruntstumper"
-                        style="@style/Widget.Auxio.TextView.Icon.Clickable"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/sup_gruntstumper"
-                        android:textAppearance="?attr/textAppearanceTitleMedium"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/about_licenses" />
-
-                    <TextView
-                        android:id="@+id/about_supporters_promo"
-                        style="@style/Widget.Auxio.TextView.Icon.Clickable"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/lng_supporters_promo"
-                        android:textStyle="italic"
-                        android:textAppearance="?attr/textAppearanceBodyMedium"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/about_licenses" />
-
-                </LinearLayout>
-
-            </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
@@ -296,17 +238,6 @@
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/about_licenses" />
 
-                    <TextView
-                        android:id="@+id/about_feedback_email"
-                        style="@style/Widget.Auxio.TextView.Icon.Clickable"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/lbl_email"
-                        app:drawableStartCompat="@drawable/ic_email_24"
-                        app:drawableTint="?attr/colorControlNormal"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/about_licenses" />
 
                 </LinearLayout>
 

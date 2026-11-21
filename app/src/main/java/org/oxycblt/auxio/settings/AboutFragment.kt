@@ -12,18 +12,18 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
+ * Modifications copyright (c) 2026 crunchbank (WhaleSong): links point to WhaleSong; Auxio is
+ * credited as the original; the supporters list and feedback email are removed.
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
  
 package org.oxycblt.auxio.settings
 
-import android.content.Context
-import android.content.Intent
 import android.os.Bundle
 import android.text.format.Formatter
 import android.view.LayoutInflater
-import androidx.core.net.toUri
 import androidx.core.view.updatePadding
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
@@ -37,7 +37,6 @@ import org.oxycblt.auxio.playback.formatDurationMs
 import org.oxycblt.auxio.ui.ViewBindingFragment
 import org.oxycblt.auxio.util.collectImmediately
 import org.oxycblt.auxio.util.openInBrowser
-import org.oxycblt.auxio.util.startIntent
 import org.oxycblt.auxio.util.systemBarInsetsCompat
 
 /**
@@ -71,23 +70,9 @@ class AboutFragment : ViewBindingFragment<FragmentAboutBinding>() {
         binding.aboutWiki.setOnClickListener { requireContext().openInBrowser(LINK_WIKI) }
         binding.aboutLicenses.setOnClickListener { requireContext().openInBrowser(LINK_LICENSES) }
         binding.aboutProfile.setOnClickListener { requireContext().openInBrowser(LINK_PROFILE) }
-        binding.aboutDonate.setOnClickListener { requireContext().openInBrowser(LINK_DONATE) }
+        binding.aboutDonate.setOnClickListener { requireContext().openInBrowser(LINK_AUXIO) }
         binding.aboutFeedbackGithub.setOnClickListener {
             requireContext().openInBrowser(LINK_NEW_ISSUE)
-        }
-        binding.aboutFeedbackEmail.setOnClickListener {
-            requireContext().sendEmail("feedback@auxio.app")
-        }
-
-        binding.aboutSupportersBkkellyh.setOnClickListener {
-            requireContext().openInBrowser(LINK_BKKELLYH)
-        }
-        binding.aboutSupportersGruntstumper.setOnClickListener {
-            requireContext().openInBrowser(LINK_GRUNTSTUMPER)
-        }
-
-        binding.aboutSupportersPromo.setOnClickListener {
-            requireContext().openInBrowser(LINK_DONATE)
         }
 
         // VIEWMODEL SETUP
@@ -116,19 +101,12 @@ class AboutFragment : ViewBindingFragment<FragmentAboutBinding>() {
             )
     }
 
-    private fun Context.sendEmail(recipient: String) {
-        val intent = Intent(Intent.ACTION_SENDTO).apply { data = "mailto:$recipient".toUri() }
-        startIntent(intent)
-    }
-
     private companion object {
-        const val LINK_SOURCE = "https://github.com/OxygenCobalt/Auxio"
-        const val LINK_WIKI = "$LINK_SOURCE/wiki"
-        const val LINK_LICENSES = "$LINK_WIKI/Licenses"
+        const val LINK_SOURCE = "https://github.com/crunchbank/WhaleSong"
+        const val LINK_AUXIO = "https://github.com/OxygenCobalt/Auxio"
+        const val LINK_WIKI = "$LINK_AUXIO/wiki"
+        const val LINK_LICENSES = "$LINK_SOURCE/blob/whalesong/NOTICE.md"
         const val LINK_NEW_ISSUE = "$LINK_SOURCE/issues/new"
-        const val LINK_PROFILE = "https://github.com/OxygenCobalt"
-        const val LINK_BKKELLYH = "https://github.com/bkkellyh"
-        const val LINK_GRUNTSTUMPER = "https://github.com/gruntstumper"
-        const val LINK_DONATE = "https://github.com/sponsors/OxygenCobalt"
+        const val LINK_PROFILE = "https://github.com/crunchbank"
     }
 }

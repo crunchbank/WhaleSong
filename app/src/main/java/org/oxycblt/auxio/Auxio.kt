@@ -12,6 +12,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
+ * Modifications copyright (c) 2026 crunchbank (WhaleSong): normal debug logging for the fork.
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
@@ -29,7 +31,6 @@ import org.oxycblt.auxio.home.HomeSettings
 import org.oxycblt.auxio.image.ImageSettings
 import org.oxycblt.auxio.playback.PlaybackSettings
 import org.oxycblt.auxio.ui.UISettings
-import org.oxycblt.auxio.util.CopyleftNoticeTree
 import timber.log.Timber
 
 /**
@@ -46,13 +47,9 @@ class Auxio : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        @Suppress("KotlinConstantConditions")
-        if (
-            BuildConfig.APPLICATION_ID != "org.oxycblt.auxio" &&
-                BuildConfig.APPLICATION_ID != "org.oxycblt.auxio.debug"
-        ) {
-            Timber.plant(CopyleftNoticeTree())
-        } else if (BuildConfig.DEBUG) {
+        // WhaleSong is an open-source fork, so it logs normally instead of planting
+        // CopyleftNoticeTree, which Auxio uses to flag closed-source repackages.
+        if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }
 
