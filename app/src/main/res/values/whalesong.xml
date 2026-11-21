@@ -33,4 +33,7 @@
         <item>-23</item>
     </integer-array>
     <integer name="ws_streaming_target_default">-14</integer>
+    <string name="ws_set_key_whale_sightings" translatable="false">ws_whale_sightings</string>
+    <string name="ws_set_whale_sightings">Whale sightings</string>
+    <string name="ws_set_whale_sightings_desc">Now and then a humpback whale surfaces in the played part of the Now Playing progress line</string>
 </resources>

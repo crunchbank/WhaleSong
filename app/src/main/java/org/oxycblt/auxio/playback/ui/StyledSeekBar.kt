@@ -12,6 +12,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
+ * Modifications copyright (c) 2026 crunchbank (WhaleSong): exposes the slider for whale sightings.
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
@@ -50,6 +52,14 @@ constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
     }
 
     /** Enables/disables wavy active-track rendering to match playback state. */
+    /** The slider itself, for WhaleSong's whale sightings. */
+    val slider: Slider
+        get() = binding.seekBarSlider
+
+    /** Whether the user is dragging the slider. */
+    val isSeeking: Boolean
+        get() = isActivated
+
     fun setWaveEnabled(enabled: Boolean) {
         binding.seekBarSlider.setWaveEnabled(enabled)
     }

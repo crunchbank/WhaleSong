@@ -12,7 +12,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * Modifications copyright (c) 2026 crunchbank (WhaleSong): streaming mode button.
+ * Modifications copyright (c) 2026 crunchbank (WhaleSong): streaming mode button; whale
+ * sightings.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
@@ -29,6 +30,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
+import androidx.preference.PreferenceManager
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.Toolbar
@@ -58,6 +60,7 @@ import org.oxycblt.auxio.util.dampen
 import org.oxycblt.auxio.util.recycler
 import org.oxycblt.auxio.util.showToast
 import org.oxycblt.auxio.whale.loudness.StreamingMode
+import org.oxycblt.auxio.whale.sightings.WhaleSightings
 import org.oxycblt.auxio.util.smoothScrollByPageTo
 import org.oxycblt.auxio.util.systemBarInsetsCompat
 import org.oxycblt.musikr.MusicParent
@@ -155,6 +158,35 @@ class PlaybackPanelFragment :
         }
 
         binding.playbackSeekBar?.listener = this
+        binding.playbackSeekBar?.let { seekBar ->
+            // WhaleSong: a whale now and then, once a sixth of the song has played.
+            val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
+            val key = getString(R.string.ws_set_key_whale_sightings)
+            val enabled = { prefs.getBoolean(key, true) }
+            val songKey = { playbackModel.song.value?.uid }
+            var sightingSong: Any? = null
+            whaleSightings =
+                WhaleSightings(
+                    seekBar.slider,
+                    canStart = {
+                        val slider = seekBar.slider
+                        val span = slider.valueTo - slider.valueFrom
+                        val played = if (span > 0f) (slider.value - slider.valueFrom) / span else 0f
+                        (enabled() &&
+                                playbackModel.isPlaying.value &&
+                                !seekBar.isSeeking &&
+                                played >= 1f / 6f)
+                            .also { if (it) sightingSong = songKey() }
+                    },
+                    canContinue = {
+                        enabled() &&
+                            playbackModel.isPlaying.value &&
+                            !seekBar.isSeeking &&
+                            songKey() == sightingSong
+                    },
+                    songKey = songKey,
+                )
+        }
 
         // Set up actions
         // TODO: Add better playback button accessibility
@@ -224,6 +256,7 @@ class PlaybackPanelFragment :
     //    }
 
     private val streamingModeListener: () -> Unit = { updateStreamingMode() }
+    private var whaleSightings: WhaleSightings? = null
 
     /** Shows whether streaming mode is on in the toolbar button. */
     private fun updateStreamingMode() {
@@ -235,6 +268,8 @@ class PlaybackPanelFragment :
 
     override fun onDestroyBinding(binding: FragmentPlaybackPanelBinding) {
         equalizerLauncher = null
+        whaleSightings?.pause()
+        whaleSightings = null
         StreamingMode.removeListener(streamingModeListener)
         binding.playbackRepeat.clearPendingIcon()
         binding.playbackSong.isSelected = false
@@ -279,7 +314,18 @@ class PlaybackPanelFragment :
     }
 
     override fun onSeekConfirmed(positionDs: Long) {
+        whaleSightings?.dive()
         playbackModel.seekTo(positionDs)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        whaleSightings?.resume()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        whaleSightings?.pause()
     }
 
     private fun updateSong(song: Song?) {

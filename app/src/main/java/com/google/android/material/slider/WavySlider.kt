@@ -12,6 +12,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
+ * Modifications copyright (c) 2026 crunchbank (WhaleSong): the wave was only drawn with system animations turned
+ * off; the check is the right way round now. Exposes the wave colour.
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
@@ -203,6 +206,10 @@ constructor(
         ensurePhaseTickerState()
     }
 
+    /** The colour the played (wavy) part of the line is drawn in. Used by whale sightings. */
+    val waveColor: Int
+        get() = tmpTrackTintList.getColorForState(drawableState, tmpTrackTintList.defaultColor)
+
     override fun setTrackActiveTintList(trackColor: ColorStateList) {
         tmpTrackTintList = trackColor
         if (!linearActiveTrackSuppressed) {
@@ -228,7 +235,7 @@ constructor(
                 context.contentResolver,
                 Settings.Global.ANIMATOR_DURATION_SCALE,
                 1f,
-            ) != 0f
+            ) == 0f
         ) {
             // Anims not enabled globally, ignore
             waveEnabled = false

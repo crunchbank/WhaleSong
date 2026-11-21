@@ -17,6 +17,13 @@
             app:key="@string/set_key_bar_action"
             app:title="@string/set_bar_action" />
 
+        <!-- WhaleSong: whale sightings. -->
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:key="@string/ws_set_key_whale_sightings"
+            app:summary="@string/ws_set_whale_sightings_desc"
+            app:title="@string/ws_set_whale_sightings" />
+
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/set_behavior">
