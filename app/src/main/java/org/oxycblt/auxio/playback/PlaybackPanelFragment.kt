@@ -12,6 +12,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
+ * Modifications copyright (c) 2026 crunchbank (WhaleSong): streaming mode button.
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
@@ -55,6 +57,7 @@ import org.oxycblt.auxio.util.collectImmediately
 import org.oxycblt.auxio.util.dampen
 import org.oxycblt.auxio.util.recycler
 import org.oxycblt.auxio.util.showToast
+import org.oxycblt.auxio.whale.loudness.StreamingMode
 import org.oxycblt.auxio.util.smoothScrollByPageTo
 import org.oxycblt.auxio.util.systemBarInsetsCompat
 import org.oxycblt.musikr.MusicParent
@@ -110,6 +113,8 @@ class PlaybackPanelFragment :
             setNavigationOnClickListener { playbackModel.openMain() }
             setOnMenuItemClickListener(this@PlaybackPanelFragment)
         }
+        StreamingMode.addListener(streamingModeListener)
+        updateStreamingMode()
 
         binding.playbackPager?.apply {
             // intentional LTR override since thepager is a chronological element
@@ -218,8 +223,19 @@ class PlaybackPanelFragment :
     //        }
     //    }
 
+    private val streamingModeListener: () -> Unit = { updateStreamingMode() }
+
+    /** Shows whether streaming mode is on in the toolbar button. */
+    private fun updateStreamingMode() {
+        val item = binding?.playbackToolbar?.menu?.findItem(R.id.action_streaming_mode) ?: return
+        val on = StreamingMode.enabled
+        item.setIcon(if (on) R.drawable.ic_streaming_mode_24 else R.drawable.ic_streaming_mode_off_24)
+        item.title = getString(if (on) R.string.ws_lbl_streaming_on else R.string.ws_lbl_streaming_off)
+    }
+
     override fun onDestroyBinding(binding: FragmentPlaybackPanelBinding) {
         equalizerLauncher = null
+        StreamingMode.removeListener(streamingModeListener)
         binding.playbackRepeat.clearPendingIcon()
         binding.playbackSong.isSelected = false
         binding.playbackArtist.isSelected = false
@@ -230,6 +246,15 @@ class PlaybackPanelFragment :
     }
 
     override fun onMenuItemClick(item: MenuItem): Boolean {
+        if (item.itemId == R.id.action_streaming_mode) {
+            StreamingMode.enabled = !StreamingMode.enabled
+            requireContext()
+                .showToast(
+                    if (StreamingMode.enabled) R.string.ws_lbl_streaming_on
+                    else R.string.ws_lbl_streaming_off,
+                )
+            return true
+        }
         if (item.itemId == R.id.action_open_equalizer) {
             // Launch the system equalizer app, if possible.
             L.d("Launching equalizer")

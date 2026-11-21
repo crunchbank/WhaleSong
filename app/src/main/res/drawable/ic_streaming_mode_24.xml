@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Copyright (c) 2026 crunchbank (WhaleSong). Licensed under the GNU General Public License,
+    version 3 or (at your option) any later version.
+    Streaming mode on: every song at one level. From Shark Music, by the same author.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:tint="?attr/colorControlNormal"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M3.5,8V16M8,8V16M12.5,8V16M17,8V16M21,8V16"
+        android:strokeWidth="2"
+        android:strokeColor="@android:color/white"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M2.5,4H22M2.5,20H22"
+        android:strokeWidth="1.5"
+        android:strokeColor="@android:color/white"
+        android:strokeLineCap="round" />
+</vector>

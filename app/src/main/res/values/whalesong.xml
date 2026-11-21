@@ -13,4 +13,24 @@
     <string name="ws_set_key_backup_playlists" translatable="false">ws_auto_backup_playlists</string>
     <string name="ws_set_backup_playlists">Back up playlists</string>
     <string name="ws_set_backup_playlists_desc">Keep a copy of each playlist as an .m3u file in the Music folder</string>
+    <string name="ws_set_key_streaming_mode" translatable="false">ws_streaming_mode</string>
+    <string name="ws_set_key_streaming_target" translatable="false">ws_streaming_mode_target</string>
+    <string name="ws_set_streaming_mode">Streaming mode</string>
+    <string name="ws_set_streaming_mode_desc">Play every song at the same loudness, like streaming services. Measured on this device when a song has no ReplayGain tags. Replaces ReplayGain while on.</string>
+    <string name="ws_set_streaming_target">Loudness</string>
+    <string name="ws_lbl_streaming_on">Streaming mode on</string>
+    <string name="ws_lbl_streaming_off">Streaming mode off</string>
+    <string-array name="ws_entries_streaming_target">
+        <item>-14 LUFS (Spotify, YouTube, Tidal)</item>
+        <item>-16 LUFS (Apple Music)</item>
+        <item>-18 LUFS (ReplayGain)</item>
+        <item>-23 LUFS (EBU R128 broadcast)</item>
+    </string-array>
+    <integer-array name="ws_values_streaming_target">
+        <item>-14</item>
+        <item>-16</item>
+        <item>-18</item>
+        <item>-23</item>
+    </integer-array>
+    <integer name="ws_streaming_target_default">-14</integer>
 </resources>

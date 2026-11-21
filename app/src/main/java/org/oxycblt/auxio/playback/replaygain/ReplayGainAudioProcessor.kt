@@ -12,38 +12,50 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
+ * Modifications copyright (c) 2026 crunchbank (WhaleSong): streaming mode; the gain switches at
+ * the exact sample where each song's audio starts (so gapless joins stay seamless) using
+ * [StreamTracker]; changes while a song plays glide instead of flushing the audio; 16-bit and
+ * float PCM.
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
  
 package org.oxycblt.auxio.playback.replaygain
 
+import androidx.annotation.OptIn
 import androidx.media3.common.C
-import androidx.media3.common.Format
-import androidx.media3.common.Player
 import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.audio.BaseAudioProcessor
 import androidx.media3.common.util.UnstableApi
 import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
+import kotlin.math.abs
+import kotlin.math.log10
 import kotlin.math.pow
 import org.oxycblt.auxio.playback.PlaybackSettings
 import org.oxycblt.auxio.playback.state.PlaybackStateManager
 import org.oxycblt.auxio.playback.state.QueueChange
+import org.oxycblt.auxio.playback.state.RepeatMode
+import org.oxycblt.auxio.whale.loudness.StreamingMode
 import org.oxycblt.musikr.Album
+import org.oxycblt.musikr.Music
 import org.oxycblt.musikr.MusicParent
 import org.oxycblt.musikr.Song
 import timber.log.Timber as L
 
 /**
- * An [AudioProcessor] that handles ReplayGain values and their amplification of the audio stream.
- * Instead of leveraging the volume attribute like other implementations, this system manipulates
- * the bitstream itself to modify the volume, which allows the use of positive ReplayGain values.
+ * An [AudioProcessor] that applies ReplayGain, or WhaleSong's streaming mode, to the audio.
  *
- * Note: This audio processor must be attached to a respective [Player] instance as a
- * [Player.Listener] to function properly.
+ * The gain of the playing song and of its neighbours in the queue is worked out on the main
+ * thread whenever something changes. [StreamTracker] tells this processor, on the playback
+ * thread, which song's audio is about to be processed, so the gain switches exactly where that
+ * song begins, including across gapless joins. A change to the gain while a song plays (a
+ * setting, or a loudness measurement arriving) glides over about half a second.
  *
- * @author Alexander Capehart (OxygenCobalt)
+ * @author Alexander Capehart (OxygenCobalt), crunchbank (WhaleSong)
  */
 @OptIn(markerClass = [UnstableApi::class])
 class ReplayGainAudioProcessor
@@ -52,36 +64,43 @@ constructor(
     private val playbackManager: PlaybackStateManager,
     private val playbackSettings: PlaybackSettings,
 ) : BaseAudioProcessor(), PlaybackStateManager.Listener, PlaybackSettings.Listener {
-    private var volume = 1f
-        set(value) {
-            field = value
-            // Processed bytes are no longer valid, flush the stream
-            flush()
-        }
+    /** Linear gains of the playing song and its neighbours, by song. */
+    private val gains = ConcurrentHashMap<Music.UID, Double>()
+
+    /** The song whose audio is being processed, as [StreamTracker] last reported. */
+    @Volatile private var streamSong: Song? = null
+    @Volatile private var target = 1.0
+    private var current = 1.0
+    private var step = 0.0 // per-frame smoothing factor
+
+    private val streamingModeListener: () -> Unit = { refresh() }
 
     fun attach() {
         playbackManager.addListener(this)
         playbackSettings.registerListener(this)
+        StreamingMode.addListener(streamingModeListener)
+        refresh()
     }
 
     /** Remove this instance from the components required for it to function correctly. */
     fun release() {
         playbackManager.removeListener(this)
         playbackSettings.unregisterListener(this)
+        StreamingMode.removeListener(streamingModeListener)
     }
 
     // --- OVERRIDES ---
 
     override fun onIndexMoved(index: Int) {
-        L.d("Index moved, updating current song")
-        applyReplayGain(playbackManager.currentSong)
+        refresh()
     }
 
     override fun onQueueChanged(queue: List<Song>, index: Int, change: QueueChange) {
-        // Other types of queue changes preserve the current song.
-        if (change.type == QueueChange.Type.SONG) {
-            applyReplayGain(playbackManager.currentSong)
-        }
+        refresh()
+    }
+
+    override fun onQueueReordered(queue: List<Song>, index: Int, isShuffled: Boolean) {
+        refresh()
     }
 
     override fun onNewPlayback(
@@ -91,29 +110,64 @@ constructor(
         isShuffled: Boolean,
     ) {
         L.d("New playback started, updating playback information")
-        applyReplayGain(playbackManager.currentSong)
+        refresh()
+    }
+
+    override fun onRepeatModeChanged(repeatMode: RepeatMode) {
+        refresh()
     }
 
     override fun onReplayGainSettingsChanged() {
         // ReplayGain config changed, we need to set it up again.
-        applyReplayGain(playbackManager.currentSong)
+        refresh()
     }
 
-    // --- REPLAYGAIN PARSING ---
-
     /**
-     * Updates the volume adjustment based on the given [Format].
-     *
-     * @param song The [Format] of the currently playing track, or null if nothing is playing.
+     * Called on the playback thread when the audio of [song] is about to be processed: its own
+     * gain applies from its very first sample. Null if the song isn't known; the gain then stays.
      */
-    private fun applyReplayGain(song: Song?) {
-        if (song == null) {
-            L.d("Nothing playing, disabling adjustment")
-            volume = 1f
-            return
-        }
+    fun onStreamStart(song: Song?) {
+        if (song == null) return
+        streamSong = song
+        val gain = gains[song.uid] ?: return
+        target = gain
+        current = gain
+        L.d("Stream of ${song.name.raw} starts at %.2f dB".format(20 * log10(gain)))
+    }
 
-        L.d("Applying ReplayGain adjustment for $song")
+    // --- GAIN ---
+
+    /** Works out the gains of the playing song and its neighbours, and applies the right one. */
+    private fun refresh() {
+        val queue = playbackManager.queue
+        val index = playbackManager.index
+        StreamingMode.setQueue(queue, index)
+        val playing = playbackManager.currentSong
+        val neighbours = buildList {
+            playing?.let { add(it) }
+            queue.getOrNull(index + 1)?.let { add(it) }
+            if (index + 1 >= queue.size && playbackManager.repeatMode == RepeatMode.ALL) {
+                queue.firstOrNull()?.let { add(it) }
+            }
+            queue.getOrNull(index - 1)?.let { add(it) }
+        }
+        val fresh = HashMap<Music.UID, Double>()
+        neighbours.forEach { song ->
+            fresh[song.uid] = 10.0.pow(gainDb(song, playing = song == playing) / 20)
+        }
+        // Keep the song still being processed, which may be the one before the playing one.
+        streamSong?.let { s -> gains[s.uid]?.let { fresh.putIfAbsent(s.uid, it) } }
+        gains.keys.retainAll(fresh.keys)
+        gains.putAll(fresh)
+        val now = streamSong?.takeIf { gains.containsKey(it.uid) } ?: playing
+        target = now?.let { gains[it.uid] } ?: 1.0
+        L.d("Gain for ${now?.name?.raw}: %.2f dB".format(20 * log10(target)))
+    }
+
+    private fun gainDb(song: Song, playing: Boolean): Double {
+        if (StreamingMode.enabled) {
+            return StreamingMode.gainDb(song, playing)
+        }
 
         val gain = song.replayGainAdjustment
         val preAmp = playbackSettings.replayGainPreAmp
@@ -122,47 +176,27 @@ constructor(
         val resolvedAdjustment =
             when (playbackSettings.replayGainMode) {
                 // User wants no adjustment.
-                ReplayGainMode.OFF -> {
-                    L.d("ReplayGain is off")
-                    null
-                }
+                ReplayGainMode.OFF -> null
                 // User wants track gain to be preferred. Default to album gain only if
                 // there is no track gain.
-                ReplayGainMode.TRACK -> {
-                    L.d("Using track strategy")
-                    gain.track ?: gain.album
-                }
+                ReplayGainMode.TRACK -> gain.track ?: gain.album
                 // User wants album gain to be preferred. Default to track gain only if
                 // here is no album gain.
-                ReplayGainMode.ALBUM -> {
-                    L.d("Using album strategy")
-                    gain.album ?: gain.track
-                }
+                ReplayGainMode.ALBUM -> gain.album ?: gain.track
                 // User wants album gain to be used when in an album, track gain otherwise.
-                ReplayGainMode.DYNAMIC -> {
-                    L.d("Using dynamic strategy")
+                ReplayGainMode.DYNAMIC ->
                     gain.album?.takeIf {
-                        playbackManager.parent is Album &&
-                            playbackManager.currentSong?.album == playbackManager.parent
+                        playbackManager.parent is Album && song.album == playbackManager.parent
                     } ?: gain.track
-                }
             }
 
-        val amplifiedAdjustment =
-            if (resolvedAdjustment != null) {
-                // Successfully resolved an adjustment, apply the corresponding pre-amp
-                L.d("Applying with pre-amp")
-                resolvedAdjustment + preAmp.with
-            } else {
-                // No adjustment found, use the corresponding user-defined pre-amp
-                L.d("Applying without pre-amp")
-                preAmp.without
-            }
-
-        L.d("Applying ReplayGain adjustment ${amplifiedAdjustment}db")
-
-        // Final adjustment along the volume curve.
-        volume = 10f.pow(amplifiedAdjustment / 20f)
+        return if (resolvedAdjustment != null) {
+            // Successfully resolved an adjustment, apply the corresponding pre-amp
+            resolvedAdjustment + preAmp.with
+        } else {
+            // No adjustment found, use the corresponding user-defined pre-amp
+            preAmp.without
+        }.toDouble()
     }
 
     // --- AUDIO PROCESSOR IMPLEMENTATION ---
@@ -170,64 +204,69 @@ constructor(
     override fun onConfigure(
         inputAudioFormat: AudioProcessor.AudioFormat,
     ): AudioProcessor.AudioFormat {
-        if (inputAudioFormat.encoding == C.ENCODING_PCM_16BIT) {
-            // AudioProcessor is only provided 16-bit PCM audio data, so that's the only
-            // encoding we need to check for.
-            // TODO: Convert to a low-level audio processor capable of handling any kind of
-            //  PCM data, once ExoPlayer can support it.
-            return inputAudioFormat
+        if (
+            inputAudioFormat.encoding != C.ENCODING_PCM_16BIT &&
+                inputAudioFormat.encoding != C.ENCODING_PCM_FLOAT
+        ) {
+            throw AudioProcessor.UnhandledAudioFormatException(inputAudioFormat)
         }
-
-        throw AudioProcessor.UnhandledAudioFormatException(inputAudioFormat)
+        step = 1.0 / (GLIDE_SECONDS * inputAudioFormat.sampleRate / 4)
+        return inputAudioFormat
     }
 
     override fun queueInput(inputBuffer: ByteBuffer) {
-        val pos = inputBuffer.position()
-        val limit = inputBuffer.limit()
-        val buffer = replaceOutputBuffer(limit - pos)
-
-        if (volume == 1f) {
+        val size = inputBuffer.remaining()
+        if (size == 0) return
+        val out = replaceOutputBuffer(size)
+        val goal = target
+        if (current == 1.0 && goal == 1.0) {
             // Nothing to adjust, just copy the audio data.
-            // isActive is technically a much better way of doing a no-op like this, but since
-            // the adjustment can change during playback I'm largely forced to do this.
-            buffer.put(inputBuffer.slice())
+            out.put(inputBuffer)
+            out.flip()
+            return
+        }
+        val channels = inputAudioFormat.channelCount
+        inputBuffer.order(ByteOrder.nativeOrder())
+        if (inputAudioFormat.encoding == C.ENCODING_PCM_FLOAT) {
+            while (inputBuffer.remaining() >= 4 * channels) {
+                val g = advance(goal).toFloat()
+                repeat(channels) { out.putFloat((inputBuffer.getFloat() * g).coerceIn(-1f, 1f)) }
+            }
         } else {
-            for (i in pos until limit step 2) {
-                // 16-bit PCM audio, deserialize a little-endian short.
-                var sample = inputBuffer.getLeShort(i)
-                // Ensure we clamp the values to the minimum and maximum values possible
-                // for the encoding. This prevents issues where samples amplified beyond
-                // 1 << 16 will end up becoming truncated during the conversion to a short,
-                // resulting in popping.
-                sample =
-                    (sample * volume)
-                        .toInt()
-                        .coerceAtLeast(Short.MIN_VALUE.toInt())
-                        .coerceAtMost(Short.MAX_VALUE.toInt())
-                        .toShort()
-                buffer.putLeShort(sample)
+            while (inputBuffer.remaining() >= 2 * channels) {
+                val g = advance(goal)
+                repeat(channels) {
+                    // Clamp to the 16-bit range so amplified samples don't wrap around and pop.
+                    val v = (inputBuffer.getShort() * g).toInt()
+                    out.putShort(
+                        v.coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort(),
+                    )
+                }
             }
         }
-
-        inputBuffer.position(limit)
-        buffer.flip()
+        inputBuffer.position(inputBuffer.limit())
+        out.flip()
     }
 
-    /**
-     * Always read a little-endian [Short] from the [ByteBuffer] at the given index.
-     *
-     * @param at The index to read the [Short] from.
-     */
-    private fun ByteBuffer.getLeShort(at: Int) =
-        get(at + 1).toInt().shl(8).or(get(at).toInt().and(0xFF)).toShort()
+    /** Moves the applied gain one frame closer to [goal] and returns it. */
+    private fun advance(goal: Double): Double {
+        if (current != goal) {
+            current += (goal - current) * step
+            if (abs(goal - current) < 1e-4) current = goal
+        }
+        return current
+    }
 
-    /**
-     * Always write a little-endian [Short] at the end of the [ByteBuffer].
-     *
-     * @param short The [Short] to write.
-     */
-    private fun ByteBuffer.putLeShort(short: Short) {
-        put(short.toByte())
-        put(short.toInt().shr(8).toByte())
+    override fun onFlush() {
+        // After a seek or a new song the gain applies at once.
+        current = target
+    }
+
+    override fun onReset() {
+        current = target
+    }
+
+    private companion object {
+        const val GLIDE_SECONDS = 0.5
     }
 }

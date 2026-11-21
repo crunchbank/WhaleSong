@@ -29,6 +29,25 @@
 
     </PreferenceCategory>
 
+    <!-- WhaleSong: streaming mode. -->
+    <PreferenceCategory android:title="@string/ws_set_streaming_mode">
+
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:key="@string/ws_set_key_streaming_mode"
+            app:summary="@string/ws_set_streaming_mode_desc"
+            app:title="@string/ws_set_streaming_mode" />
+
+        <org.oxycblt.auxio.settings.ui.IntListPreference
+            app:defaultValue="@integer/ws_streaming_target_default"
+            app:dependency="@string/ws_set_key_streaming_mode"
+            app:entries="@array/ws_entries_streaming_target"
+            app:entryValues="@array/ws_values_streaming_target"
+            app:key="@string/ws_set_key_streaming_target"
+            app:title="@string/ws_set_streaming_target" />
+
+    </PreferenceCategory>
+
     <PreferenceCategory android:title="@string/set_replay_gain">
 
         <org.oxycblt.auxio.settings.ui.IntListPreference

@@ -12,7 +12,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * Modifications copyright (c) 2026 crunchbank (WhaleSong): plays are counted here.
+ * Modifications copyright (c) 2026 crunchbank (WhaleSong): plays are counted here; the audio
+ * renderers report each song's stream to the gain stage (streaming mode).
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
@@ -32,7 +33,7 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.decoder.ffmpeg.FfmpegAudioRenderer
-import androidx.media3.exoplayer.BaseRenderer
+import androidx.media3.exoplayer.Renderer
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.RenderersFactory
 import androidx.media3.exoplayer.audio.DefaultAudioSink
@@ -55,6 +56,7 @@ import org.oxycblt.auxio.music.MusicRepository
 import org.oxycblt.auxio.playback.PlaybackSettings
 import org.oxycblt.auxio.playback.persist.PersistenceRepository
 import org.oxycblt.auxio.playback.replaygain.ReplayGainAudioProcessor
+import org.oxycblt.auxio.playback.replaygain.StreamTracker
 import org.oxycblt.auxio.playback.state.DeferredPlayback
 import org.oxycblt.auxio.playback.state.PlaybackCommand
 import org.oxycblt.auxio.playback.state.PlaybackStateHolder
@@ -664,17 +666,26 @@ class ExoPlaybackStateHolder(
         fun create(): ExoPlaybackStateHolder {
             // Since Auxio is a music player, only specify an audio renderer to save
             // battery/apk size/cache size]
+            // WhaleSong: each renderer's streams and sink go through a StreamTracker, so the
+            // gain stage knows which song's audio it is processing.
+            val streamTracker = StreamTracker(replayGainProcessor)
             val audioRenderer = RenderersFactory { handler, _, audioListener, _, _ ->
-                arrayOf<BaseRenderer>(
-                    FfmpegAudioRenderer(handler, audioListener, replayGainProcessor),
-                    MediaCodecAudioRenderer(
-                        context,
-                        MediaCodecSelector.DEFAULT,
-                        handler,
-                        audioListener,
+                fun sink() =
+                    streamTracker.sink(
                         DefaultAudioSink.Builder(context)
                             .setAudioProcessors(arrayOf(replayGainProcessor))
                             .build(),
+                    )
+                arrayOf<Renderer>(
+                    streamTracker.wrap(FfmpegAudioRenderer(handler, audioListener, sink())),
+                    streamTracker.wrap(
+                        MediaCodecAudioRenderer(
+                            context,
+                            MediaCodecSelector.DEFAULT,
+                            handler,
+                            audioListener,
+                            sink(),
+                        ),
                     ),
                 )
             }
