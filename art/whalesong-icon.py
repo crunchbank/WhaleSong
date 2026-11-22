@@ -8,7 +8,7 @@
 import math, sys, os
 OUT = sys.argv[1] if len(sys.argv) > 1 else "."
 RES = sys.argv[2] if len(sys.argv) > 2 else OUT
-CX, CY, R = 54.0, 51.0, 30.0
+CX, CY, R = 54.0, 45.0, 41.0   # record fills the sky; its centre sits in the fluke's wings
 BG = "#d7e9fa"
 
 def f(v): return ("%.2f" % v).rstrip("0").rstrip(".")
@@ -95,15 +95,16 @@ def wave_band(y, amp, period, thick, phase=-2):
         up = not up
         d += "Q%s,%s %s,%s " % (f(xs[i] - h/2), f(y + thick - amp if up else y + thick + amp), f(xs[i-1]), f(y + thick))
     return d + "Z"
-MONO = [ring(CX, CY, R - 1.5, 3.0), fluke_path(sc((50.6, 70.5))), wave_band(70.0, 2.6, 18, 4.2), wave_band(78.0, 2.2, 22, 3.6, -9)]
+MONO = [ring(CX, 50.0, 28.5, 3.0), fluke_path(sc((50.6, 70.5))), wave_band(70.0, 2.6, 18, 4.2), wave_band(78.0, 2.2, 22, 3.6, -9)]
 layers_fg = [
     # (path, fill, alpha)
     (circle(CX, CY, R), "#14161b", 1),
     (wedge(200, 250, R - 1.2), "#ffffff", 0.06),
     (wedge(20, 70, R - 1.2), "#ffffff", 0.06),
-] + [(ring(CX, CY, r, 0.55), "#2c313a", 1) for r in (27.5, 25.0, 22.5, 20.0, 17.5, 15.0)] + [
-    (circle(CX, CY, 10.5), "#f0795a", 1),
-    (circle(CX, CY, 7.0), "#f59a7f", 1),
+] + [(ring(CX, CY, r, 0.55), "#2c313a", 1) for r in (21.2, 23.8, 26.4, 29.0, 31.6, 34.2, 36.8)] + [
+    (circle(CX, CY, 18.0), "#f0795a", 1),       # label, centred on the tail
+    (ring(CX, CY, 17.4, 0.6), "#d9603f", 1),
+    (circle(CX, CY, 11.5), "#f59a7f", 1),
     (FLUKE, "#0f3d6e", 1),                         # outline (drawn fat underneath)
 ]
 # shrink-free outline trick: draw the fluke twice; the dark copy is stroked in SVG/vector
