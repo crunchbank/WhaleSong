@@ -43,6 +43,46 @@
         android:fillColor="#2c313a"
         android:pathData="M16.93,45 a37.07,37.07 0 1,0 74.15,0 a37.07,37.07 0 1,0 -74.15,0 Z M17.48,45 a36.52,36.52 0 1,1 73.05,0 a36.52,36.52 0 1,1 -73.05,0 Z" />
     <path
+        android:fillColor="#ffffff"
+        android:fillAlpha="0.14"
+        android:pathData="M60.71,22.64 a1.43,1.43 0 1,0 2.86,0 a1.43,1.43 0 1,0 -2.86,0 Z" />
+    <path
+        android:fillColor="#ffffff"
+        android:fillAlpha="0.92"
+        android:pathData="M62.14,20.04 Q62.14,22.64 64.74,22.64 Q62.14,22.64 62.14,25.24 Q62.14,22.64 59.54,22.64 Q62.14,22.64 62.14,20.04 Z" />
+    <path
+        android:fillColor="#ffffff"
+        android:fillAlpha="0.14"
+        android:pathData="M40.91,27.63 a0.94,0.94 0 1,0 1.87,0 a0.94,0.94 0 1,0 -1.87,0 Z" />
+    <path
+        android:fillColor="#ffffff"
+        android:fillAlpha="0.92"
+        android:pathData="M41.84,25.93 Q41.84,27.63 43.54,27.63 Q41.84,27.63 41.84,29.33 Q41.84,27.63 40.14,27.63 Q41.84,27.63 41.84,25.93 Z" />
+    <path
+        android:fillColor="#ffffff"
+        android:fillAlpha="0.14"
+        android:pathData="M81.46,39.96 a1.1,1.1 0 1,0 2.2,0 a1.1,1.1 0 1,0 -2.2,0 Z" />
+    <path
+        android:fillColor="#ffffff"
+        android:fillAlpha="0.92"
+        android:pathData="M82.56,37.96 Q82.56,39.96 84.56,39.96 Q82.56,39.96 82.56,41.96 Q82.56,39.96 80.56,39.96 Q82.56,39.96 82.56,37.96 Z" />
+    <path
+        android:fillColor="#ffffff"
+        android:fillAlpha="0.14"
+        android:pathData="M21.62,50.49 a1.26,1.26 0 1,0 2.53,0 a1.26,1.26 0 1,0 -2.53,0 Z" />
+    <path
+        android:fillColor="#ffffff"
+        android:fillAlpha="0.92"
+        android:pathData="M22.88,48.19 Q22.88,50.49 25.18,50.49 Q22.88,50.49 22.88,52.79 Q22.88,50.49 20.58,50.49 Q22.88,50.49 22.88,48.19 Z" />
+    <path
+        android:fillColor="#ffffff"
+        android:fillAlpha="0.14"
+        android:pathData="M82.53,56.84 a0.77,0.77 0 1,0 1.54,0 a0.77,0.77 0 1,0 -1.54,0 Z" />
+    <path
+        android:fillColor="#ffffff"
+        android:fillAlpha="0.92"
+        android:pathData="M83.3,55.44 Q83.3,56.84 84.7,56.84 Q83.3,56.84 83.3,58.24 Q83.3,56.84 81.9,56.84 Q83.3,56.84 83.3,55.44 Z" />
+    <path
         android:fillColor="#f0795a"
         android:pathData="M36,45 a18,18 0 1,0 36,0 a18,18 0 1,0 -36,0 Z" />
     <path

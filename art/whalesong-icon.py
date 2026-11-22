@@ -81,6 +81,17 @@ def wave(y, amp, period, phase, bottom=112):
     return d
 
 FLUKE = fluke_path()
+def sparkle(x, y, r):  # four-pointed star with concave sides
+    return ("M%s,%s Q%s,%s %s,%s Q%s,%s %s,%s Q%s,%s %s,%s Q%s,%s %s,%s Z" %
+            (f(x), f(y-r), f(x), f(y), f(x+r), f(y), f(x), f(y), f(x), f(y+r), f(x), f(y), f(x-r), f(y), f(x), f(y), f(x), f(y-r)))
+def on_groove(r, deg):
+    return (CX + r*math.cos(math.radians(deg)), CY + r*math.sin(math.radians(deg)))
+# Stars caught on the grooves: (groove radius, angle in degrees, size). All clear of the fluke and inside the mask.
+SPARKLES = [(23.8, -70, 2.6), (21.2, -125, 1.7), (29.0, -10, 2.0), (31.6, 170, 2.3), (31.6, 22, 1.4)]
+SPARKLE_LAYERS = []
+for gr, deg, size in SPARKLES:
+    x, y = on_groove(gr, deg)
+    SPARKLE_LAYERS += [(circle(x, y, size*0.55), "#ffffff", 0.14), (sparkle(x, y, size), "#ffffff", 0.92)]
 def wave_band(y, amp, period, thick, phase=-2):
     h = period / 2
     xs = []; x = -4 + phase
@@ -101,7 +112,7 @@ layers_fg = [
     (circle(CX, CY, R), "#14161b", 1),
     (wedge(200, 250, R - 1.2), "#ffffff", 0.06),
     (wedge(20, 70, R - 1.2), "#ffffff", 0.06),
-] + [(ring(CX, CY, r, 0.55), "#2c313a", 1) for r in (21.2, 23.8, 26.4, 29.0, 31.6, 34.2, 36.8)] + [
+] + [(ring(CX, CY, r, 0.55), "#2c313a", 1) for r in (21.2, 23.8, 26.4, 29.0, 31.6, 34.2, 36.8)] + SPARKLE_LAYERS + [
     (circle(CX, CY, 18.0), "#f0795a", 1),       # label, centred on the tail
     (ring(CX, CY, 17.4, 0.6), "#d9603f", 1),
     (circle(CX, CY, 11.5), "#f59a7f", 1),
