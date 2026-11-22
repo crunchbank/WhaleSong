@@ -16,3 +16,6 @@ captures/
 .kotlin
 .aider*
 .env
+
+# WhaleSong: release signing (see app/build.gradle). Never commit.
+whalesong.properties
