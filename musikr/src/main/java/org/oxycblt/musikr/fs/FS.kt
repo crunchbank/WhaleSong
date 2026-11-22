@@ -14,6 +14,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Modifications copyright (c) 2026 crunchbank (WhaleSong): File.readUri.
  */
  
 package org.oxycblt.musikr.fs
@@ -49,6 +51,11 @@ data class File(
     val mimeType: String,
     val size: Long,
     val parent: Deferred<Directory>?,
+    /**
+     * WhaleSong: a URI that reads the same file faster than [uri], used only to read its tags.
+     * Playback and identity keep using [uri].
+     */
+    val readUri: Uri? = null,
 ) : FSEntry
 
 sealed interface FSUpdate {

@@ -14,6 +14,9 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Modifications copyright (c) 2026 crunchbank (WhaleSong): covers that several songs share are
+ * written once without making the other songs wait.
  */
  
 package org.oxycblt.musikr.covers.stored
@@ -90,12 +93,8 @@ interface CoverStorage {
 }
 
 private class FSCoverStorage(private val dir: File) : CoverStorage {
-    private val fileMutexes = mutableMapOf<String, Mutex>()
+    private val inProgress = mutableSetOf<String>()
     private val mapMutex = Mutex()
-
-    private suspend fun getMutexForFile(file: String): Mutex {
-        return mapMutex.withLock { fileMutexes.getOrPut(file) { Mutex() } }
-    }
 
     override suspend fun find(name: String): FDCover? =
         withContext(Dispatchers.IO) {
@@ -106,26 +105,39 @@ private class FSCoverStorage(private val dir: File) : CoverStorage {
             }
         }
 
+    // WhaleSong: songs that share a cover no longer queue behind the one writing it. Only the
+    // first caller transcodes and writes; the rest get the same (lazily opened) cover straight
+    // away. The scan finishes only once every write has, so nothing opens a cover before it
+    // exists. If the write fails, the others point at a missing file, which reads as no cover
+    // and is retried on the next scan, as a failed write was before.
     override suspend fun write(name: String, block: suspend (OutputStream) -> Unit): FDCover {
-        val fileMutex = getMutexForFile(name)
-        return fileMutex.withLock {
-            val targetFile = File(dir, name)
-            if (!targetFile.exists()) {
-                withContext(Dispatchers.IO) {
-                    val tempFile = File(dir, "$name.tmp")
-
-                    try {
-                        tempFile.outputStream().use { block(it) }
-                        tempFile.renameTo(targetFile)
-                        FSStoredCover(targetFile)
-                    } catch (e: IOException) {
-                        tempFile.delete()
-                        throw e
-                    }
+        val targetFile = File(dir, name)
+        val first =
+            mapMutex.withLock {
+                if (name in inProgress || withContext(Dispatchers.IO) { targetFile.exists() }) {
+                    false
+                } else {
+                    inProgress.add(name)
+                    true
                 }
-            } else {
-                FSStoredCover(targetFile)
             }
+        if (!first) {
+            return FSStoredCover(targetFile)
+        }
+        try {
+            return withContext(Dispatchers.IO) {
+                val tempFile = File(dir, "$name.tmp")
+                try {
+                    tempFile.outputStream().use { block(it) }
+                    tempFile.renameTo(targetFile)
+                    FSStoredCover(targetFile)
+                } catch (e: Exception) {
+                    tempFile.delete()
+                    throw e
+                }
+            }
+        } finally {
+            mapMutex.withLock { inProgress.remove(name) }
         }
     }
 

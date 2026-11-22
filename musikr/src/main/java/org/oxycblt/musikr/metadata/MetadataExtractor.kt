@@ -14,6 +14,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Modifications copyright (c) 2026 crunchbank (WhaleSong): reads through File.readUri when set.
  */
  
 package org.oxycblt.musikr.metadata
@@ -48,7 +50,17 @@ private class MetadataExtractorImpl(private val contentResolver: ContentResolver
     MetadataExtractor {
     override suspend fun extract(deviceFile: File): MetadataResult =
         withContext(Dispatchers.IO) {
-            contentResolver.openFileDescriptor(deviceFile.uri, "r")?.use { fd ->
+            // WhaleSong: read through the faster URI when the file system offers one, falling
+            // back to the file's own URI if that cannot be opened.
+            val fastFd =
+                deviceFile.readUri?.let {
+                    try {
+                        contentResolver.openFileDescriptor(it, "r")
+                    } catch (e: Exception) {
+                        null
+                    }
+                }
+            (fastFd ?: contentResolver.openFileDescriptor(deviceFile.uri, "r"))?.use { fd ->
                 val fis = FileInputStream(fd.fileDescriptor)
                 TagLibJNI.open(deviceFile, fis).also { fis.close() }
             } ?: MetadataResult.ProviderFailed

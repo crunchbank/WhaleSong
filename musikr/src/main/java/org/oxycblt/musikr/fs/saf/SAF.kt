@@ -14,6 +14,9 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Modifications copyright (c) 2026 crunchbank (WhaleSong): date added and a faster read URI come
+ * from one MediaStore query (MediaIndex) instead of two lookups per file.
  */
  
 package org.oxycblt.musikr.fs.saf
@@ -35,6 +38,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.withContext
 import org.oxycblt.musikr.fs.AddedMs
 import org.oxycblt.musikr.fs.Directory
 import org.oxycblt.musikr.fs.FS
@@ -56,6 +60,8 @@ private constructor(
 ) : FS {
     override suspend fun explore(files: Channel<File>): Deferred<Result<Unit>> = coroutineScope {
         tryAsyncWith(files, Dispatchers.Main) {
+            // WhaleSong: one MediaStore query up front instead of two lookups per file.
+            val index = withContext(Dispatchers.IO) { MediaIndex.load(context) }
             query.source
                 .map { location ->
                     exploreDirectoryImpl(
@@ -65,6 +71,7 @@ private constructor(
                         null,
                         query.exclude.mapTo(mutableSetOf()) { it.path },
                         files,
+                        index,
                     )
                 }
                 .tryAwaitAll()
@@ -92,6 +99,7 @@ private constructor(
         parent: Deferred<Directory>?,
         exclude: Set<Path>,
         files: Channel<File>,
+        index: MediaIndex?,
     ): Deferred<Result<Unit>> =
         tryAsync(Dispatchers.IO) {
             // Make a kotlin future
@@ -139,6 +147,7 @@ private constructor(
                                 directoryDeferred,
                                 exclude,
                                 files,
+                                index,
                             )
                         if (recursive != null) {
                             recursive.add(subtask)
@@ -148,6 +157,7 @@ private constructor(
                         }
                     } else {
                         val size = cursor.getLong(sizeIndex)
+                        val indexed = index?.get(newPath)
                         val file =
                             File(
                                 uri = childUri,
@@ -157,11 +167,13 @@ private constructor(
                                 modifiedMs = lastModified,
                                 parent = directoryDeferred,
                                 addedMs =
-                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                                        JoinAddedMs(context, childUri)
-                                    } else {
-                                        NullAddedMs
+                                    when {
+                                        indexed != null -> KnownAddedMs(indexed.addedMs)
+                                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ->
+                                            JoinAddedMs(context, childUri)
+                                        else -> NullAddedMs
                                     },
+                                readUri = indexed?.uri,
                             )
                         children.add(file)
                         files.send(file)
@@ -201,6 +213,10 @@ private constructor(
                 }
             }
         }
+    }
+
+    private class KnownAddedMs(private val addedMs: Long) : AddedMs {
+        override suspend fun resolve() = addedMs
     }
 
     private object NullAddedMs : AddedMs {

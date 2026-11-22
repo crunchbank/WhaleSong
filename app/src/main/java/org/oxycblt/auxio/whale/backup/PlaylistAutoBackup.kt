@@ -115,7 +115,7 @@ constructor(
             val text = render(playlist)
             val wanted = fileName(playlist.name.raw)
             val existing = byId[id]
-            if (existing != null && existing.name.equals(wanted, ignoreCase = true)) {
+            if (existing != null && isNameFor(existing.name, wanted)) {
                 kept += existing.uri
                 if (existing.text != text) {
                     write(existing.uri, text)
@@ -241,6 +241,19 @@ constructor(
         }
 
         /** A file name for a playlist: characters not allowed in file names become "_". */
+        /**
+         * Whether a backup's file name belongs to a playlist whose name gives [wanted]. When
+         * another app's file already has the name, MediaStore saves ours as "Name (1).m3u", and
+         * that must still count; otherwise every sync would see a rename, write a new file and
+         * delete the old one, without end.
+         */
+        internal fun isNameFor(existing: String, wanted: String): Boolean {
+            if (existing.equals(wanted, ignoreCase = true)) return true
+            val base = wanted.removeSuffix(".m3u")
+            return Regex("${Regex.escape(base)} \\(\\d+\\)\\.m3u", RegexOption.IGNORE_CASE)
+                .matches(existing)
+        }
+
         internal fun fileName(name: String): String {
             val clean = name.replace(Regex("[\\\\/:*?\"<>|\\p{Cntrl}]"), "_").trim().trimStart('.')
             return (clean.ifEmpty { "Playlist" }).take(120) + ".m3u"
