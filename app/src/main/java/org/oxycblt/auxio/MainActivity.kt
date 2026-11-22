@@ -14,6 +14,9 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Modifications copyright (c) 2026 crunchbank (WhaleSong): a refused service start no longer
+ * crashes the app; it is retried when the window has focus.
  */
  
 package org.oxycblt.auxio
@@ -65,18 +68,45 @@ class MainActivity : AppCompatActivity() {
         L.d("Activity created")
     }
 
+    // WhaleSong: true when Android refused to start the service; retried once we have focus.
+    private var serviceStartPending = false
+
     override fun onResume() {
         super.onResume()
 
-        startService(
-            Intent(this, AuxioService::class.java)
-                .setAction(AuxioService.ACTION_START)
-                .putExtra(AuxioService.INTENT_KEY_START_ID, IntegerTable.START_ID_ACTIVITY),
-        )
+        startAuxioService()
 
         if (!startIntentAction(intent)) {
             // No intent action to do, just restore the previously saved state.
             playbackModel.playDeferred(DeferredPlayback.RestoreState(false))
+        }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus && serviceStartPending) {
+            startAuxioService()
+        }
+    }
+
+    /**
+     * Start the service that plays and loads music. Android 12+ refuses to start it while it
+     * counts the app as in the background, which can happen while resuming behind the lock screen
+     * or with the screen off. That used to crash the app (and with it any library scan) without a
+     * word; now it waits until the window has focus and tries again.
+     */
+    private fun startAuxioService() {
+        try {
+            startService(
+                Intent(this, AuxioService::class.java)
+                    .setAction(AuxioService.ACTION_START)
+                    .putExtra(AuxioService.INTENT_KEY_START_ID, IntegerTable.START_ID_ACTIVITY),
+            )
+            serviceStartPending = false
+        } catch (e: IllegalStateException) {
+            // BackgroundServiceStartNotAllowedException is an IllegalStateException.
+            L.w("Could not start the service yet, retrying when focused: $e")
+            serviceStartPending = true
         }
     }
 

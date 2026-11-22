@@ -35,5 +35,6 @@ The git history records every change, with its author and date. In summary, base
 | `com/google/android/material/slider/WavySlider.kt` | The played part of the progress line was only wavy with system animations turned off (an inverted check); it is wavy while playing now. Exposes the wave colour. |
 | `musikr/.../fs/saf/MediaIndex.kt` (new), `musikr/.../fs/saf/SAF.kt`, `musikr/.../fs/FS.kt`, `musikr/.../metadata/MetadataExtractor.kt` | Faster folder (File picker) scans: each file's date added and MediaStore URI come from one MediaStore query at the start of the scan instead of two lookups per file, and tags are read through the MediaStore URI, which opens faster than the document URI. Without the audio permission it falls back to the old per-file lookup. |
 | `musikr/.../covers/stored/CoverStorage.kt` | A cover several songs share is transcoded once without the other songs waiting for it, so covers for different albums are written in parallel. |
+| `MainActivity.kt` | When Android 12+ refuses to start the playback/library service (the app resumed while not yet in the foreground, e.g. with the screen off), the app no longer crashes; it retries once its window has focus. |
 
 "Auxio" is the name of the original project. WhaleSong is not affiliated with or endorsed by it.
