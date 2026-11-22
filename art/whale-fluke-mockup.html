@@ -1,0 +1,468 @@
+<!doctype html>
+<!--
+  Copyright (c) 2026 crunchbank (WhaleSong). Licensed under the GNU General Public License,
+  version 3 or (at your option) any later version.
+  Animated mockup of the whale-sightings "fluke up" dive, for tuning before it goes into
+  WhaleSightings.kt. Same engine and settings as the surface and cruise mockups: units are dp, the
+  played part of the progress bar is the sea, and every disturbance sends real ripples along it.
+-->
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Whale Fluke Mockup</title>
+<style>
+:root{--bg:#f4f5f8;--fg:#1b1c20;--mute:#5d606a;--card:#fff;--line:#dfe1e8}
+@media (prefers-color-scheme:dark){:root{--bg:#0c0d10;--fg:#e4e5ea;--mute:#9a9ca6;--card:#17181c;--line:#2a2c33}}
+body{background:var(--bg);color:var(--fg);font:15px/1.45 -apple-system,system-ui,sans-serif;margin:0;padding:24px 16px}
+main{max-width:860px;margin:auto}h1{font-size:22px;margin:0 0 4px}h2{font-size:16px;margin:22px 0 8px}
+p{color:var(--mute);margin:4px 0 12px}
+.card{background:var(--card);border-radius:12px;padding:12px;margin-bottom:12px}
+canvas{display:block;border-radius:6px;max-width:100%}
+#big{width:100%}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
+button,select{font:inherit;font-size:14px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
+input[type=range]{flex:1;min-width:120px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:6px 20px}
+.grid label{display:flex;flex-direction:column;font-size:13px;color:var(--mute)}
+.grid label span{display:flex;justify-content:space-between}.grid b{color:var(--fg);font-weight:600}
+.t{font-variant-numeric:tabular-nums;min-width:96px;font-size:14px}
+ol{color:var(--mute);padding-left:20px;margin:6px 0}
+</style></head><body><main>
+<h1>Fluke up</h1>
+<p>The deep dive. After a last breath the whale arches its back high (the hump that gives humpbacks
+their name), rolls forward, and its tail stock climbs out of the water. As it rises the fluke turns
+to face us, edge-on to full spread, showing its pale underside: the same fluke as the app icon. It
+hangs a moment with water streaming and dripping off its serrated trailing edge, each drop rippling
+the sea, then slides straight down and is gone, leaving a smooth, calm patch, the fluke print.
+Settings carried over: whale 1.5×, bulge 0.5×, ripple speed 0.75×, out of the water 1.65×. The panel
+is taller than the others because the fluke stands well above the bar.</p>
+
+<div class="card">
+  <canvas id="big"></canvas>
+  <div class="bar">
+    <button id="play">Pause</button><button id="restart">Restart</button>
+    <select id="rate"><option value="1">1×</option><option value="0.5">½×</option><option value="0.25">¼×</option></select>
+    <select id="theme"><option value="dark">Dark</option><option value="light">Light</option></select>
+    <input id="scrub" type="range" min="0" max="15" step="0.01" value="0"><span class="t" id="time"></span>
+  </div>
+  <h2>Roughly phone size</h2>
+  <canvas id="small"></canvas>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0">Tune it</h2>
+  <p>Drag the sliders. Read the values out to me, or describe what's wrong, and I'll put them into the app.</p>
+  <div class="grid" id="knobs"></div>
+  <div class="bar"><button id="reset">Reset all</button></div>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0">The beats</h2>
+  <ol>
+    <li><b>0.5 s</b>: it surfaces and cruises. <b>2.9 s</b>: its last breath before the dive.</li>
+    <li><b>4.4 s</b>: it arches: the back humps up high and the head goes under.</li>
+    <li><b>5.6 s</b>: it rolls forward over the arch and the tail stock climbs out.</li>
+    <li><b>6.4 s</b>: the fluke turns to face us as it lifts, edge-on to full spread.</li>
+    <li><b>8.0 s</b>: it hangs, water streaming and dripping off the trailing edge, each drop rippling the sea.</li>
+    <li><b>8.7 s</b>: it slides straight down and is gone. The fluke print, a smooth calm patch, lingers.</li>
+  </ol>
+</div>
+</main>
+<script>
+"use strict";
+const BODY = new Path2D("M25.2,0.5 Q25.2,-0.9 23.6,-1.4 Q22.9,-1.6 22.2,-1.8 Q21.23,-1.62 20.45,-2.23 Q19.48,-2.05 18.7,-2.65 Q17.73,-2.47 16.95,-3.08 Q15.98,-2.9 15.2,-3.5 Q13.6,-4.7 11.6,-4.6 C6,-5.6 -1,-6.4 -6,-6.3 Q-8.6,-6.3 -10,-7.0 Q-11.2,-8.4 -12.4,-8.3 Q-12.7,-7.4 -13.8,-6.4 Q-14.38,-5.88 -15.14,-5.76 Q-15.72,-5.24 -16.48,-5.12 Q-17.06,-4.6 -17.82,-4.48 Q-18.4,-3.96 -19.16,-3.84 Q-19.74,-3.32 -20.5,-3.2 C-22.2,-2.4 -23.6,-1.5 -25,-1.0 C-28.5,-1.3 -32,-0.9 -35.2,0.9 Q-31.5,1.3 -25,0.9 C-18,2.0 -12,3.6 -6,5.0 C0,6.7 6.5,7.0 10.5,6.0 C15,4.9 20.5,3.2 23.6,2.2 Q25.6,1.6 25.2,0.5 Z");
+const FLIPPER = new Path2D("M13.6,2.6 C11,5.6 6.5,9.2 0.8,11.6 Q-0.42,11.58 -1.33,12.4 Q-2.56,12.38 -3.47,13.2 Q-4.69,13.18 -5.6,14 Q-6.6,14.3 -5.6,13.0 C-2,10.2 2.5,7.6 8.2,4.2 Z");
+const MOUTH = new Path2D("M25.1,0.9 Q19,1.4 12.8,2.6");
+const PLEATS = new Path2D("M22.4,2.2 Q11,6.4 -4,5.0 M20.6,3.0 Q10,6.8 -1.5,5.7 M18.6,3.8 Q9,7.1 1.5,6.3");
+// The app icon's fluke, seen from behind, in icon units: notch at (54, 44.2), stock below.
+const FLUKE_D = "M48.9,84 C49.94,73 51.22,62.5 51.56,56.2 C47.5,53.6 40.31,50.9 35.67,46.6 C31.73,42.9 29.64,37.6 29.52,30.2 Q31.96,33.6 34.98,35 Q36.54,35.02 37.57,36.03 Q39.13,36.05 40.16,37.07 Q41.72,37.08 42.75,38.1 Q44.31,38.12 45.34,39.13 Q46.9,39.15 47.93,40.17 Q49.49,40.18 50.52,41.2 C52.14,NA 53.3,NB 54,NC C54.7,NB 55.86,NA 57.48,41.2 Q58.51,40.18 60.07,40.17 Q61.1,39.15 62.66,39.13 Q63.69,38.12 65.25,38.1 Q66.28,37.08 67.84,37.07 Q68.87,36.05 70.43,36.03 Q71.46,35.02 73.02,35 Q76.04,33.6 78.48,30.2 C78.36,37.6 76.27,42.9 72.33,46.6 C67.69,50.9 60.5,53.6 56.44,56.2 C56.78,62.5 58.06,73 59.1,84 Z";
+const D0 = FLUKE_D.replace("NA", "41.9").replace("NB", "43").replace("NC", "44.2").replace("NB", "43").replace("NA", "41.9");
+const FLUKE_ROOT = 62;    // icon y where the stock leaves the body
+const EDGE = [[34.98,35],[37.57,36.03],[40.16,37.07],[42.75,38.1],[45.34,39.13],[47.93,40.17],[50.52,41.2]]
+  .flatMap(([x, y]) => [[x, y], [108 - x, y]]);           // the serrated trailing edge, both blades
+const BLOWHOLE = {x: 10.4, y: -4.9};
+const PEDUNCLE = {x: -25, y: 0};    // body units: where the fluke joins
+const HUMP = -10, TAIL = -25;       // body-unit pivots for the arch and the roll
+const TRIM = -3.0;                  // rests a little nose-up about its head, tail under
+
+const THEMES = {
+  dark:  {bg:"#111318", track:"#a8c7fa", inactive:"#44474e", flip:"#e3ecff", line:"#0b2a57", spray:"#dbe7ff", text:"#c4c6d0"},
+  light: {bg:"#f8f9ff", track:"#2f5ea8", inactive:"#d7dbe6", flip:"#cfe0ff", line:"#f8f9ff", spray:"#5c86c9", text:"#43474e"},
+};
+
+// The bar, in dp: as the app draws it, with headroom above for the raised fluke.
+const W = 200, H = 66, CY = 46, LEFT = 8, THUMB = 150, GAP = 6;
+const SEA_END = THUMB - 2 - GAP;
+const X0 = 58;
+const LOOP = 15;
+
+const DEFAULTS = {
+  ripple: 1.0, speed: 0.75, reach: 1.0, bulge: 0.5, height: 1.65, size: 1.5, blow: 1.0, swim: 1.0,
+  arch: 1.0,     // how high the back humps before the roll
+  fluke: 1.0,    // fluke size, against a real humpback's (a third of its length across)
+  lift: 1.0,     // how high the fluke stands at the top
+  drip: 1.0,     // water off the trailing edge
+  pace: 1.0,     // the dive's tempo: below 1 is slower
+};
+const KNOBS = [
+  ["ripple", "Ripple strength", 0, 2.5, 0.05],
+  ["speed",  "Ripple speed",    0.3, 2.5, 0.05],
+  ["reach",  "Ripple reach",    0.3, 3, 0.05],
+  ["bulge",  "Bulge over the whale", 0, 2.5, 0.05],
+  ["height", "Whale out of the water", 0.4, 1.8, 0.05],
+  ["size",   "Whale size",      0.8, 1.8, 0.05],
+  ["arch",   "Arch of the back", 0, 2, 0.05],
+  ["fluke",  "Fluke size",      0.5, 1.5, 0.05],
+  ["lift",   "Fluke height at the top", 0.3, 2, 0.05],
+  ["drip",   "Dripping water",  0, 2, 0.05],
+  ["pace",   "Dive pace",       0.6, 1.5, 0.05],
+  ["swim",   "Swim speed",      0, 2.5, 0.05],
+];
+const P = Object.assign({}, DEFAULTS);
+
+const ease = v => { const c = Math.min(1, Math.max(0, v)); return c * c * (3 - 2 * c); };
+const smoother = v => { const c = Math.min(1, Math.max(0, v)); return c * c * c * (c * (c * 6 - 15) + 10); };
+const lerp = (a, b, k) => a + (b - a) * k;
+const deg = 180 / Math.PI;
+
+// --- The dive, as functions of time --------------------------------------------------------------
+// Each part is its own smooth curve and they overlap, so the whale flows from one into the next.
+// Times after the breath stretch with "Dive pace".
+const DEEP = 20;
+const DIVE = 4.4;                                   // the arch begins
+const T = s => s <= DIVE ? s : DIVE + (s - DIVE) / P.pace;   // a beat's time at the current pace
+const swimX = t => X0 + 3.2 * P.swim * t;
+const flukeScale = () => 0.61 * P.size / 1.5 * P.fluke;     // dp per icon unit
+
+function stateAt(t) {
+  const top = 1.6 - (P.height - 1) * 3.2;
+  const up = smoother((t - 0.5) / 2.0);
+  const env = smoother((t - 2.5) / 1.2) * (1 - smoother((t - DIVE + 0.6) / 0.8));
+  const bob = 0.45 * Math.sin((t - 2.2) * 2 * Math.PI / 1.6) * env;
+  const arch = smoother((t - T(4.4)) / (1.6 / P.pace));          // 0 → 1: back humps, head down
+  const roll = smoother((t - T(5.6)) / (1.8 / P.pace));          // 0 → 1: rolls over, stock climbs
+  const turn = smoother((t - T(6.4)) / (1.3 / P.pace));          // 0 → 1: fluke turns to face us
+  const rise = smoother((t - T(6.8)) / (1.2 / P.pace));          // 0 → 1: lifts clear
+  const slide = smoother((t - T(8.7)) / (1.5 / P.pace)) ** 1.4;  // 0 → 1: slides down and under
+  const depth = lerp(DEEP, top, up) + bob
+    - 1.4 * P.arch * arch * (1 - roll)                           // the hump stands up
+    - 13 * P.lift * flukeScale() / 0.61 * rise                   // tail stock out of the water
+    + (13 * P.lift * flukeScale() / 0.61 + 30) * slide;          // and down, all the way under
+  return {
+    x: swimX(t) - 6 * roll, depth, up, arch, roll, turn, rise, slide,
+    archAngle: 20 * P.arch * arch,                // nose down about the hump
+    rollAngle: 66 * roll + 8 * slide,             // then over, about the tail stock
+  };
+}
+
+function bodyMatrix(s) {
+  const sc = P.size;
+  return new DOMMatrix().translate(s.x, CY - 2 - mound(s.x, s) + s.depth)
+    .translate(TAIL * sc, 0).rotate(s.rollAngle).translate(-TAIL * sc, 0)
+    .translate(HUMP * sc, 0).rotate(s.archAngle).translate(-HUMP * sc, 0)
+    .translate(20 * sc, 0).rotate(TRIM).translate(-20 * sc, 0).scale(sc);
+}
+
+// Until it turns, the tail is the whale's own, drawn with the body: the side view's tail stock and
+// edge-on fluke. As it turns to face us the logo's fluke takes over, riding on the tail stock and
+// pointing the way the stock points. The handover is an exchange: the body's own tail is trimmed
+// back from its tip to the stock while the V grows from a three-quarter view to full spread.
+// Only the blades turn: the V's stock is always exactly as thick as the body's tail stock, so the
+// join is seamless.
+const SWAP0 = 0.22, SWAP1 = 0.4;   // turn: the V appears / the body's own tail is fully trimmed
+const ROOT_OVERLAP = 3;            // icon units the V's stock runs on into the body, under it
+const STOCK_W = 5.5;               // the logo fluke's stock width at the root, icon units
+const PED_DEPTH = 1.9;             // the body's tail stock depth at the peduncle, body units
+const shapes = new Map();
+function flukeShape(s) {
+  const m = bodyMatrix(s);
+  const a = m.transformPoint(PEDUNCLE), b = m.transformPoint({x: PEDUNCLE.x - 5, y: 0});
+  const ang = Math.atan2(b.y - a.y, b.x - a.x) * deg + 90;   // icon "up" along the stock
+  const fs = flukeScale();
+  const sx = lerp(0.32, 1, smoother((s.turn - SWAP0) / (1 - SWAP0)));
+  const stock = PED_DEPTH * P.size / fs / STOCK_W;
+  const w = y => lerp(sx, stock, smoother((y - 48) / 9));   // blades turn; the stock does not
+  const map = (x, y) => ({x: 54 + (x - 54) * w(y), y});
+  const key = sx.toFixed(3) + "/" + stock.toFixed(3);
+  let path = shapes.get(key);
+  if (!path) {
+    path = new Path2D(D0.replace(/(-?[\d.]+),(-?[\d.]+)/g, (q, x, y) => { const p = map(+x, +y); return p.x.toFixed(2) + "," + y; }));
+    if (shapes.size > 400) shapes.clear();
+    shapes.set(key, path);
+  }
+  const mat = new DOMMatrix().translate(a.x, a.y).rotate(ang).scale(fs, fs).translate(-54, -FLUKE_ROOT);
+  return {mat, path, sx, point: (x, y) => mat.transformPoint(map(x, y))};
+}
+// How far back the body's own tail is drawn, in body units: all of it until the V appears, then
+// trimmed back to the tail stock as the V takes over.
+const tailCut = s => lerp(-37, PEDUNCLE.x - 0.3, smoother((s.turn - SWAP0) / (SWAP1 - SWAP0)));
+
+function mound(x, s) {
+  const d = x - (s.x + 6 * P.size);
+  const out = s.up * (1 - s.slide);
+  return out * 1.4 * P.bulge * Math.exp(-(d * d) / 160);
+}
+
+// --- Drips: each leaves the trailing edge at its own moment and falls; each landing ripples ------
+function rng(seed) { return () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }; }
+const DRIPS = (() => { const r = rng(31); return Array.from({length: 34}, () => ({
+  at: 7.4 + r() * 2.0, e: Math.floor(r() * EDGE.length), size: 0.35 + r() * 0.45 })); })();
+const G = 70;   // dp/s²: a drop falls a fluke's height in about two thirds of a second
+
+function dripState(d) {
+  const at = T(d.at);
+  const s = stateAt(at);
+  if (s.rise < 0.35 || s.slide > 0.6) return null;     // only while the fluke is up
+  const p = flukeShape(s).point(EDGE[d.e][0], EDGE[d.e][1]);
+  const fall = Math.max(0, CY - 2 - p.y);
+  return {at, x: p.x, y: p.y, land: at + Math.sqrt(2 * fall / G)};
+}
+
+// --- The water ---------------------------------------------------------------------------------
+const KS = []; { const n = 70, k0 = 0.03, k1 = 2.0; for (let i = 0; i < n; i++) KS.push(k0 + (k1 - k0) * i / (n - 1)); }
+const HUMPS = new Map();
+function hump(sigma) {
+  if (HUMPS.has(sigma)) return HUMPS.get(sigma);
+  const w = KS.map(k => Math.exp(-(k * sigma) * (k * sigma) / 4));
+  const s = w.reduce((a, b) => a + b, 0);
+  const r = w.map(v => v / s); HUMPS.set(sigma, r); return r;
+}
+let EVENTS = [], PRINT = null;
+function placeEvents() {
+  EVENTS = [];
+  const at = (t, dx, a, sigma) => { const s = stateAt(t); EVENTS.push({t, x: s.x + dx * P.size, a, w: hump(sigma)}); };
+  at(0.7, 6, 2.2, 6);            // stirs
+  at(1.45, 16, 4.0, 5);          // head breaks the surface
+  at(2.9, 10, 0.8, 3);           // the breath
+  at(T(5.0), 2, 2.4, 7);         // the arch pushes the water up
+  at(T(6.6), -22, 2.6, 5);       // the stock climbs out
+  at(T(9.6), -24, 1.6, 6);       // the fluke slips under
+  for (const d of DRIPS) {       // every drop that lands
+    const ds = dripState(d);
+    if (ds && P.drip > 0) EVENTS.push({t: ds.land, x: ds.x, a: 0.35 * d.size * P.drip, w: hump(1.6)});
+  }
+  // The fluke print: a smooth, calm patch where the fluke went down.
+  const s = stateAt(T(9.6));
+  PRINT = {x: flukeShape(s).mat.e, t: T(9.4)};
+}
+
+function ripples(x, t) {
+  const g = 220 * P.speed * P.speed;
+  const nu = 0.5 / P.reach;
+  let h = 0;
+  for (const e of EVENTS) {
+    const age = t - e.t;
+    if (age <= 0) continue;
+    const r = Math.abs(x - e.x);
+    let s = 0;
+    for (let i = 0; i < KS.length; i++) {
+      const k = KS[i];
+      s += e.w[i] * Math.cos(k * r) * Math.cos(Math.sqrt(g * k) * age) * Math.exp(-nu * k * k * age - 0.12 * age / P.reach);
+    }
+    // The hump of water is pushed up over a quarter second, not conjured in one frame.
+    h += e.a * s * smoother(age / 0.25);
+  }
+  return h * P.ripple;
+}
+
+function printAt(x, t) {
+  if (!PRINT) return 0;
+  const d = x - PRINT.x;
+  return smoother((t - PRINT.t) / 0.8) * (1 - smoother((t - PRINT.t - 3.2) / 2.0)) * Math.exp(-(d * d) / 120);
+}
+
+function surface(x, t, s) {
+  const calmPatch = printAt(x, t);
+  let h = mound(x, s) + ripples(x, t) * (1 - 0.85 * calmPatch) + 0.5 * calmPatch;
+  h = Math.max(-1.6, h);
+  const calm = ease((x - LEFT) / 8) * ease((SEA_END - x) / 8);
+  return CY - 2 - h * calm;
+}
+
+// --- Spout (the last breath) -----------------------------------------------------------------------
+const DROPS = (() => { const r = rng(7); return Array.from({length: 46}, () => ({
+  delay: r() * 0.25, v: 0.75 + r() * 0.35, spread: (r() - 0.5) * 2, size: 0.45 + r() * 0.75, life: 1.3 + r() * 0.8 })); })();
+const MIST = (() => { const r = rng(19); return Array.from({length: 9}, () => ({
+  delay: 0.15 + r() * 0.35, h: 0.75 + r() * 0.3, dx: (r() - 0.5) * 3, r: 1.4 + r() * 1.4 })); })();
+const BLOW_AT = 2.9;
+function drawSpout(c, a, bx, by, ox, oy, th) {
+  if (a < 0 || a > 3.2) return;
+  const top = 15 * P.blow * P.size / 1.25;
+  const g = 34, v0 = Math.sqrt(2 * g * top), wind = 3.5;
+  c.fillStyle = th.spray;
+  const rise = Math.min(top * 0.9, v0 * Math.min(a, v0 / g) - 0.5 * g * Math.min(a, v0 / g) ** 2);
+  const colAlpha = 0.75 * (1 - ease((a - 0.3) / 0.6));
+  if (colAlpha > 0.01 && rise > 0.5) {
+    const lean = wind * a * a;
+    c.globalAlpha = colAlpha; c.beginPath();
+    c.moveTo(bx - 0.5, by);
+    c.quadraticCurveTo(ox - 0.9 + lean * 0.3, oy - rise * 0.5, ox - 1.6 + lean, oy - rise);
+    c.arc(ox + lean, oy - rise, 1.6, Math.PI, 0);
+    c.quadraticCurveTo(ox + 0.9 + lean * 0.3, oy - rise * 0.5, bx + 0.5, by);
+    c.closePath(); c.fill();
+  }
+  for (const m of MIST) {
+    const age = a - m.delay; if (age <= 0) continue;
+    const e = ease(age / 0.5), alpha = 0.32 * e * (1 - ease((age - 0.5) / 1.8));
+    if (alpha <= 0.005) continue;
+    c.globalAlpha = alpha; c.beginPath();
+    c.arc(ox + m.dx * (1 + age) + wind * age * age, oy - top * m.h * e + age * 1.2, m.r * (0.6 + age * 1.1), 0, 7); c.fill();
+  }
+  for (const d of DROPS) {
+    const age = a - d.delay; if (age <= 0 || age > d.life) continue;
+    const y = v0 * d.v * age - 0.5 * g * age * age; if (y < -1) continue;
+    const x = d.spread * (0.6 + 3.2 * age) + wind * age * age;
+    c.globalAlpha = 0.85 * (1 - ease((age - d.life * 0.5) / (d.life * 0.5)));
+    c.beginPath(); c.arc(ox + x, oy - y, d.size * (1 - 0.3 * age / d.life), 0, 7); c.fill();
+  }
+  c.globalAlpha = 1;
+}
+
+// --- Drawing ------------------------------------------------------------------------------------
+function frame(cv, t, theme) {
+  const th = THEMES[theme];
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = cv.id === "small" ? W : cv.clientWidth || 800;
+  const k = cssW / W;
+  if (cv.width !== Math.round(cssW * dpr)) {
+    cv.width = Math.round(cssW * dpr); cv.height = Math.round(H * k * dpr);
+    cv.style.width = cssW + "px"; cv.style.height = H * k + "px";
+  }
+  const c = cv.getContext("2d");
+  c.setTransform(dpr * k, 0, 0, dpr * k, 0, 0);
+  c.fillStyle = th.bg; c.fillRect(0, 0, W, H);
+  c.fillStyle = th.inactive; c.beginPath(); c.roundRect(THUMB + 2 + GAP, CY - 2, W - 8 - (THUMB + 2 + GAP), 4, 2); c.fill();
+  c.fillStyle = th.track; c.beginPath(); c.roundRect(THUMB - 2, CY - 12, 4, 24, 2); c.fill();
+  c.fillStyle = th.text; c.font = "6px -apple-system,system-ui,sans-serif";
+  c.fillText("1:24", LEFT, H - 3); c.textAlign = "right"; c.fillText("3:58", W - 8, H - 3); c.textAlign = "left";
+
+  placeEvents();
+  const s = stateAt(t);
+  const xs = []; for (let x = LEFT; x <= SEA_END + 0.001; x += 0.5) xs.push(x);
+  const ys = xs.map(x => surface(x, t, s));
+
+  c.save();
+  // Above the water only, and clear of the thumb.
+  c.beginPath(); c.moveTo(LEFT - 10, -5);
+  for (let i = 0; i < xs.length; i++) c.lineTo(xs[i], ys[i] + 0.3);
+  c.lineTo(SEA_END, -5); c.closePath(); c.clip();
+
+  // The body and its tail, then the fluke, drawn in two passes, so they read as one animal with
+  // one outline: first every knock-out outline, then every fill on top. Where body and fluke
+  // overlap, the fills cover the outlines between them and the join disappears.
+  if (s.up > 0.001 && s.slide < 0.999) {
+    const m = bodyMatrix(s);
+    const cut = tailCut(s);
+    const showV = s.turn >= SWAP0;
+    const f = flukeShape(s);
+    const inBody = fn => {
+      c.save(); c.transform(m.a, m.b, m.c, m.d, m.e, m.f);
+      c.beginPath(); c.rect(cut, -20, 70, 40); c.clip(); fn(); c.restore();
+    };
+    const inFluke = fn => {
+      c.save(); c.transform(f.mat.a, f.mat.b, f.mat.c, f.mat.d, f.mat.e, f.mat.f);
+      c.beginPath(); c.rect(-20, -20, 148, FLUKE_ROOT + ROOT_OVERLAP + 20); c.clip(); fn(); c.restore();
+    };
+    c.lineJoin = "round";
+    // Pass 1: outlines.
+    c.strokeStyle = th.bg;
+    inBody(() => { c.lineWidth = 1.6 / P.size; c.stroke(BODY); });
+    if (showV) inFluke(() => { c.lineWidth = 1.6 / flukeScale(); c.stroke(f.path); });
+    // Pass 2: fills.
+    c.fillStyle = th.track;
+    inBody(() => c.fill(BODY));
+    if (showV) inFluke(() => c.fill(f.path));
+    // Details on top.
+    inBody(() => {
+      c.strokeStyle = th.line; c.lineWidth = 0.45; c.lineCap = "round";
+      c.globalAlpha = 0.7; c.stroke(MOUTH); c.globalAlpha = 0.38; c.stroke(PLEATS); c.globalAlpha = 1;
+      c.fillStyle = th.flip; c.fill(FLIPPER); c.strokeStyle = th.bg; c.lineWidth = 0.4; c.stroke(FLIPPER);
+      c.fillStyle = th.line; c.beginPath(); c.arc(13.6, 1.3, 0.5, 0, 7); c.fill();
+    });
+    // The pale underside, each humpback's own pattern, shows as it turns to face us.
+    const pale = 0.6 * smoother((s.turn - 0.35) / 0.45);
+    if (showV && pale > 0.01) inFluke(() => {
+      c.clip(f.path);
+      const sx = f.sx;
+      c.globalAlpha = pale; c.fillStyle = th.flip;
+      c.beginPath(); c.ellipse(54 - 13 * sx, 41, 10 * sx, 4.2, 0.42, 0, 7); c.fill();
+      c.beginPath(); c.ellipse(54 + 13 * sx, 41, 10 * sx, 4.2, -0.42, 0, 7); c.fill();
+      c.globalAlpha = pale * 0.8; c.fillStyle = th.track;
+      c.beginPath(); c.ellipse(54 - 16 * sx, 39.5, 2.2 * sx, 1.2, 0.4, 0, 7); c.fill();
+      c.beginPath(); c.ellipse(54 + 17 * sx, 40.5, 1.6 * sx, 1.0, -0.4, 0, 7); c.fill();
+    });
+    // Water streaming off the trailing edge as it first lifts clear.
+    const stream = P.drip * smoother((s.rise - 0.2) / 0.3) * (1 - smoother((s.rise - 0.85) / 0.15)) * (1 - s.slide);
+    if (stream > 0.01) {
+      c.strokeStyle = th.spray; c.lineCap = "round";
+      for (let i = 0; i < EDGE.length; i++) {
+        const p = f.point(EDGE[i][0], EDGE[i][1]);
+        const len = (2.5 + (i * 7 % 5)) * stream;
+        c.globalAlpha = 0.55 * stream; c.lineWidth = 0.5;
+        c.beginPath(); c.moveTo(p.x, p.y + 0.4); c.lineTo(p.x + 0.2, p.y + 0.4 + len); c.stroke();
+      }
+      c.globalAlpha = 1;
+    }
+  }
+  c.restore();
+
+  // Drips in flight.
+  if (P.drip > 0) {
+    c.fillStyle = th.spray;
+    for (const d of DRIPS) {
+      const ds = dripState(d);
+      if (!ds || t < ds.at || t > ds.land) continue;
+      const a = t - ds.at;
+      c.globalAlpha = 0.85;
+      c.beginPath(); c.ellipse(ds.x, ds.y + 0.5 * G * a * a, d.size * 0.7, d.size * (1 + a * 1.2), 0, 0, 7); c.fill();
+    }
+    c.globalAlpha = 1;
+  }
+
+  // The sea.
+  c.fillStyle = th.track;
+  c.beginPath(); c.moveTo(xs[0], CY + 2);
+  for (let i = 0; i < xs.length; i++) c.lineTo(xs[i], ys[i]);
+  c.lineTo(SEA_END, CY + 2); c.closePath(); c.fill();
+  c.beginPath(); c.arc(LEFT, CY, 2, Math.PI / 2, Math.PI * 1.5); c.fill();
+  c.beginPath(); c.arc(SEA_END, CY, 2, -Math.PI / 2, Math.PI / 2); c.fill();
+
+  // The last breath before the dive.
+  const a = t - BLOW_AT;
+  if (a >= 0 && a <= 3.2) {
+    const b = bodyMatrix(s).transformPoint(BLOWHOLE);
+    const o = bodyMatrix(stateAt(BLOW_AT)).transformPoint(BLOWHOLE);
+    drawSpout(c, a, b.x, Math.min(b.y, surface(b.x, t, s)), o.x, o.y, th);
+  }
+}
+
+// --- Controls -------------------------------------------------------------------------------------
+const $ = id => document.getElementById(id);
+for (const [key, label, min, max, step] of KNOBS) {
+  const l = document.createElement("label");
+  l.innerHTML = `<span>${label}<b id="v-${key}"></b></span><input type="range" min="${min}" max="${max}" step="${step}" id="k-${key}">`;
+  $("knobs").appendChild(l);
+  const inp = l.querySelector("input");
+  inp.value = P[key];
+  inp.addEventListener("input", () => { P[key] = +inp.value; show(); });
+}
+function show() { for (const [key] of KNOBS) $("v-" + key).textContent = (+P[key]).toFixed(2) + "×"; }
+$("reset").onclick = () => { Object.assign(P, DEFAULTS); for (const [key] of KNOBS) $("k-" + key).value = P[key]; show(); };
+show();
+
+let t = 0, playing = true, last = performance.now();
+const loopLen = () => Math.max(LOOP, T(LOOP - 2) + 2);
+$("play").onclick = () => { playing = !playing; $("play").textContent = playing ? "Pause" : "Play"; };
+$("restart").onclick = () => { t = 0; };
+$("scrub").addEventListener("input", e => { t = +e.target.value * loopLen() / 15; playing = false; $("play").textContent = "Play"; });
+$("theme").value = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+
+function tick(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  const L = loopLen();
+  if (playing) t = (t + dt * +$("rate").value) % L;
+  $("scrub").value = t * 15 / L; $("time").textContent = t.toFixed(2) + " s / " + L.toFixed(1) + " s";
+  frame($("big"), t, $("theme").value);
+  frame($("small"), t, $("theme").value);
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+</script></body></html>

@@ -389,7 +389,8 @@ class PlaybackPanelFragment :
 
     private fun updatePlaying(isPlaying: Boolean) {
         requireBinding().playbackPlayPause.isChecked = isPlaying
-        requireBinding().playbackSeekBar?.setWaveEnabled(isPlaying)
+        // WhaleSong: the seek bar stays a flat line; it is the sea the whales swim in.
+        requireBinding().playbackSeekBar?.setWaveEnabled(false)
     }
 
     private fun updateShuffled(isShuffled: Boolean) {

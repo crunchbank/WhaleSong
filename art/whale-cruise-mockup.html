@@ -1,0 +1,413 @@
+<!doctype html>
+<!--
+  Copyright (c) 2026 crunchbank (WhaleSong). Licensed under the GNU General Public License,
+  version 3 or (at your option) any later version.
+  Animated mockup of the whale-sightings "cruise with calf" moment, for tuning before it goes into
+  WhaleSightings.kt. Same engine and settings as whale-surface-mockup.html: units are dp, the played
+  part of the progress bar is the sea, and every disturbance sends real (dispersive) ripples along it.
+-->
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Whale Cruise Mockup</title>
+<style>
+:root{--bg:#f4f5f8;--fg:#1b1c20;--mute:#5d606a;--card:#fff;--line:#dfe1e8}
+@media (prefers-color-scheme:dark){:root{--bg:#0c0d10;--fg:#e4e5ea;--mute:#9a9ca6;--card:#17181c;--line:#2a2c33}}
+body{background:var(--bg);color:var(--fg);font:15px/1.45 -apple-system,system-ui,sans-serif;margin:0;padding:24px 16px}
+main{max-width:860px;margin:auto}h1{font-size:22px;margin:0 0 4px}h2{font-size:16px;margin:22px 0 8px}
+p{color:var(--mute);margin:4px 0 12px}
+.card{background:var(--card);border-radius:12px;padding:12px;margin-bottom:12px}
+canvas{display:block;border-radius:6px;max-width:100%}
+#big{width:100%}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
+button,select{font:inherit;font-size:14px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
+input[type=range]{flex:1;min-width:120px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:6px 20px}
+.grid label{display:flex;flex-direction:column;font-size:13px;color:var(--mute)}
+.grid label span{display:flex;justify-content:space-between}.grid b{color:var(--fg);font-weight:600}
+.t{font-variant-numeric:tabular-nums;min-width:96px;font-size:14px}
+ol{color:var(--mute);padding-left:20px;margin:6px 0}
+</style></head><body><main>
+<h1>Cruise with calf</h1>
+<p>A mother and her calf come up together and swim along the played part of the bar. The calf keeps
+station at her head, on the near side, paler than her as calves are, the way humpback calves ride beside their mothers. It is
+livelier than she is: it bobs faster, breathes more often, and dips under and pops back up while she
+keeps a steady course. Both leave a gentle wake. Then they sink away together, calf a beat behind.
+Settings carried over from surface and blow: whale 1.5×, bulge 0.5×, ripple speed 0.75×, out of the
+water 1.65×, tails kept under, stately sink.</p>
+
+<div class="card">
+  <canvas id="big"></canvas>
+  <div class="bar">
+    <button id="play">Pause</button><button id="restart">Restart</button>
+    <select id="rate"><option value="1">1×</option><option value="0.5">½×</option><option value="0.25">¼×</option></select>
+    <select id="theme"><option value="dark">Dark</option><option value="light">Light</option></select>
+    <input id="scrub" type="range" min="0" max="17" step="0.01" value="0"><span class="t" id="time"></span>
+  </div>
+  <h2>Roughly phone size</h2>
+  <canvas id="small"></canvas>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0">Tune it</h2>
+  <p>Drag the sliders. Read the values out to me, or describe what's wrong, and I'll put them into the app.</p>
+  <div class="grid" id="knobs"></div>
+  <div class="bar"><button id="reset">Reset all</button></div>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0">The beats</h2>
+  <ol>
+    <li><b>0.5 s</b>: the mother comes up, the calf half a second behind her.</li>
+    <li><b>2.2 s</b>: the calf blows first, a small quick puff. <b>2.9 s</b>: the mother blows.</li>
+    <li><b>3–10 s</b>: they cruise. Each leaves a gentle wake from its head; the calf bobs faster than its mother.</li>
+    <li><b>5.4 s</b>: the calf dips under, nose down, and comes back up with a splash of ripples and, at 8.3 s, another little blow.</li>
+    <li><b>10.4 s</b>: they sink away slowly, the calf following a beat later, and the sea settles.</li>
+  </ol>
+</div>
+</main>
+<script>
+"use strict";
+const BODY = new Path2D("M25.2,0.5 Q25.2,-0.9 23.6,-1.4 Q22.9,-1.6 22.2,-1.8 Q21.23,-1.62 20.45,-2.23 Q19.48,-2.05 18.7,-2.65 Q17.73,-2.47 16.95,-3.08 Q15.98,-2.9 15.2,-3.5 Q13.6,-4.7 11.6,-4.6 C6,-5.6 -1,-6.4 -6,-6.3 Q-8.6,-6.3 -10,-7.0 Q-11.2,-8.4 -12.4,-8.3 Q-12.7,-7.4 -13.8,-6.4 Q-14.38,-5.88 -15.14,-5.76 Q-15.72,-5.24 -16.48,-5.12 Q-17.06,-4.6 -17.82,-4.48 Q-18.4,-3.96 -19.16,-3.84 Q-19.74,-3.32 -20.5,-3.2 C-22.2,-2.4 -23.6,-1.5 -25,-1.0 C-28.5,-1.3 -32,-0.9 -35.2,0.9 Q-31.5,1.3 -25,0.9 C-18,2.0 -12,3.6 -6,5.0 C0,6.7 6.5,7.0 10.5,6.0 C15,4.9 20.5,3.2 23.6,2.2 Q25.6,1.6 25.2,0.5 Z");
+const FLIPPER = new Path2D("M13.6,2.6 C11,5.6 6.5,9.2 0.8,11.6 Q-0.42,11.58 -1.33,12.4 Q-2.56,12.38 -3.47,13.2 Q-4.69,13.18 -5.6,14 Q-6.6,14.3 -5.6,13.0 C-2,10.2 2.5,7.6 8.2,4.2 Z");
+const MOUTH = new Path2D("M25.1,0.9 Q19,1.4 12.8,2.6");
+const PLEATS = new Path2D("M22.4,2.2 Q11,6.4 -4,5.0 M20.6,3.0 Q10,6.8 -1.5,5.7 M18.6,3.8 Q9,7.1 1.5,6.3");
+const BLOWHOLE = {x: 10.4, y: -4.9};
+const FLUKE_PTS = [[-25, -1], [-28.5, -1.3], [-32, -0.9], [-35.2, 0.9]];
+const TAIL_PIVOT = -35;   // body units: the fluke tip, about which it tips forward as it sinks
+const HEAD_PIVOT = 20;    // body units: the head
+// Each whale rests a few degrees nose-up about its head (its trim), which keeps its tail under.
+
+const THEMES = {
+  dark:  {bg:"#111318", track:"#a8c7fa", calf:"#dce8fe", inactive:"#44474e", flip:"#e3ecff", line:"#0b2a57", spray:"#dbe7ff", text:"#c4c6d0"},
+  light: {bg:"#f8f9ff", track:"#2f5ea8", calf:"#86a6dc", inactive:"#d7dbe6", flip:"#cfe0ff", line:"#f8f9ff", spray:"#5c86c9", text:"#43474e"},
+};
+
+// The bar, in dp: as the app draws it.
+const W = 200, H = 50, CY = 30, LEFT = 8, THUMB = 150, GAP = 6;
+const SEA_END = THUMB - 2 - GAP;
+const X0 = 36;          // the mother's middle at the start of the loop, still under water
+const LOOP = 17;
+
+const DEFAULTS = {
+  ripple: 1.0, speed: 0.75, reach: 1.0, bulge: 0.5, height: 1.65, size: 1.5, blow: 1.0,
+  swim: 1.0,     // 1 = 3.2 dp/s
+  calf: 0.55,    // calf size relative to its mother
+  station: 0.6,  // where the calf rides: -1 at her tail, 0 at her middle, 1 at her nose
+  wake: 1.0,     // the bow wave each leaves as it swims
+  dip: 1.0,      // how deep the calf's dip goes
+};
+const KNOBS = [
+  ["ripple", "Ripple strength", 0, 2.5, 0.05],
+  ["speed",  "Ripple speed",    0.3, 2.5, 0.05],
+  ["reach",  "Ripple reach",    0.3, 3, 0.05],
+  ["bulge",  "Bulge over the whales", 0, 2.5, 0.05],
+  ["height", "Whales out of the water", 0.4, 1.8, 0.05],
+  ["size",   "Mother's size",   0.8, 1.8, 0.05],
+  ["calf",   "Calf size (of mother)", 0.3, 0.8, 0.01],
+  ["station","Calf position (tail … nose)", -1, 1.2, 0.05],
+  ["swim",   "Swim speed",      0, 2.5, 0.05],
+  ["wake",   "Wake",            0, 3, 0.05],
+  ["dip",    "Calf's dip",      0, 2, 0.05],
+  ["blow",   "Blow height",     0.4, 2, 0.05],
+];
+const P = Object.assign({}, DEFAULTS);
+
+const ease = v => { const c = Math.min(1, Math.max(0, v)); return c * c * (3 - 2 * c); };
+const smoother = v => { const c = Math.min(1, Math.max(0, v)); return c * c * c * (c * (c * 6 - 15) + 10); };
+const lerp = (a, b, k) => a + (b - a) * k;
+const bump = v => v <= 0 || v >= 1 ? 0 : v < 0.5 ? smoother(2 * v) : smoother(2 - 2 * v);   // 0 → 1 → 0, smooth to the 2nd derivative
+const deg = 180 / Math.PI;
+
+// --- The two whales ----------------------------------------------------------------------------
+// Each is a timeline. Depth is measured down from the water; everything is smooth to the second
+// derivative, so nothing starts or stops with a jolt.
+const DEEP = 20;
+const swimX = t => X0 + 3.2 * P.swim * t;
+const WHALES = {
+  mother: {
+    scale: () => P.size, offset: () => 0, trim: -3.0, ride: 0, colour: "track",
+    up: 0.5, upDur: 2.0, sink: 10.4, sinkDur: 5.6,
+    bobAmp: 0.45, bobPeriod: 1.8, bobPhase: 0,
+    dips: [],
+    blows: [2.9], blowScale: 1,
+  },
+  calf: {
+    scale: () => P.size * P.calf, offset: () => P.station * 22 * P.size, trim: -5.5,
+    ride: 0.8, colour: "calf",       // calves ride high, and are paler than their mothers
+    up: 1.0, upDur: 1.8, sink: 11.0, sinkDur: 5.0,
+    bobAmp: 0.4, bobPeriod: 1.25, bobPhase: 0.7,
+    dips: [[5.4, 2.8]],          // [start, duration]: under, nose down, and back up
+    blows: [2.2, 8.3], blowScale: 0.55,
+  },
+};
+
+function depthOf(w, t, part = "all") {
+  const k = w.scale() / P.size;                       // the calf rides proportionally lower
+  const top = (1.6 - (P.height - 1) * 3.2) * k - w.ride;
+  const up = smoother((t - w.up) / w.upDur);
+  const down = smoother((t - w.sink) / w.sinkDur) ** 2.4;   // lingers at the top, sinks in sight
+  let d = lerp(DEEP, top, up * (1 - down));
+  let dip = 0;
+  for (const [s, dur] of w.dips) dip += 7 * P.dip * k * bump((t - s) / dur);
+  const env = smoother((t - w.up - w.upDur) / 1.2) * (1 - smoother((t - w.sink + 1.0) / 0.8));
+  let quiet = 1;
+  for (const [s, dur] of w.dips) quiet *= 1 - bump((t - s + 0.3) / (dur + 0.6));
+  const bob = w.bobAmp * k * Math.sin((t - w.bobPhase) * 2 * Math.PI / w.bobPeriod) * env * quiet;
+  if (part === "path") return d + dip;
+  if (part === "bob") return bob;
+  return d + dip + bob;
+}
+
+function stateOf(w, t) {
+  const x = swimX(t) + w.offset();
+  const depth = depthOf(w, t);
+  const path = u => depthOf(w, u, "path"), bob = u => depthOf(w, u, "bob");
+  const vy = (path(t + 0.02) - path(t - 0.02)) / 0.04;          // dp/s, positive = going down
+  const vb = (bob(t + 0.02) - bob(t - 0.02)) / 0.04;
+  const v = 3.2 * P.swim + 12;
+  // Pitch follows its path, nose up as it climbs and nose down into a dip. The sink is a gentle,
+  // steady nose-down tilt about the fluke tip, so the tail never lifts as the head goes down.
+  const climb = t < w.sink - 0.2 ? 0.42 * Math.atan2(vy, v) * deg : 0;
+  // Any nose-down pitch turns about the fluke tip too (as in the calf's dip), so a tail never
+  // flips up out of the water; nose-up pitch turns about the middle. The split is smooth.
+  const noseDown = climb * smoother(climb / 9);
+  const dive = 10 * smoother((t - w.sink - 0.1) / 4.0) + noseDown;
+  const angle = -3 + (climb - noseDown) + 0.15 * Math.atan2(vb, 12) * deg;
+  const k = w.scale() / P.size;
+  const out = 1 - smoother((depth - 2 * k) / (DEEP - 2 * k));
+  const stir = smoother((t - w.up + 0.2) / 1.2) * (1 - smoother((t - w.sink - 1.2) / 3.0));
+  return {w, x, depth, angle, dive, out, stir, scale: w.scale()};
+}
+
+function mounds(x, ss) {
+  let h = 0;
+  for (const s of ss) {
+    const k = s.scale / P.size;
+    const d = x - (s.x + 6 * s.scale);
+    h += (s.stir * 0.9 + s.out * 1.4) * k * P.bulge * Math.exp(-(d * d) / (160 * k));
+  }
+  return h;
+}
+
+function matrixOf(s, ss) {
+  const sc = s.scale, px = TAIL_PIVOT * sc;
+  const base = CY - 2 - mounds(s.x, ss);   // rides the slow mound of water, never the ripples
+  return new DOMMatrix().translate(s.x, base + s.depth)
+    .translate(px, 0).rotate(s.dive).translate(-px, 0).rotate(s.angle)
+    .translate(HEAD_PIVOT * sc, 0).rotate(s.w.trim).translate(-HEAD_PIVOT * sc, 0).scale(sc);
+}
+
+// --- The water -------------------------------------------------------------------------------
+// Each disturbance is a hump of water released at a time and place; its free evolution is the
+// Cauchy-Poisson problem (deep water, omega = sqrt(g k)): long waves run ahead, short ones trail.
+const KS = []; { const n = 70, k0 = 0.03, k1 = 2.0; for (let i = 0; i < n; i++) KS.push(k0 + (k1 - k0) * i / (n - 1)); }
+const HUMPS = new Map();
+function hump(sigma) {
+  if (HUMPS.has(sigma)) return HUMPS.get(sigma);
+  const w = KS.map(k => Math.exp(-(k * sigma) * (k * sigma) / 4));
+  const s = w.reduce((a, b) => a + b, 0);
+  const r = w.map(v => v / s); HUMPS.set(sigma, r); return r;
+}
+
+let EVENTS = [];
+function placeEvents() {
+  EVENTS = [];
+  const add = (who, t, dx, a, sigma) => {
+    const s = stateOf(WHALES[who], t);
+    EVENTS.push({t, x: s.x + dx * s.scale, a: a * s.scale / P.size, w: hump(sigma)});
+  };
+  // [time, x offset in body units, amplitude dp, width dp]
+  add("mother", 0.7, 6, 2.2, 6);     // the water stirs
+  add("mother", 1.45, 16, 4.0, 5);   // her head breaks the surface
+  add("calf", 1.9, 16, 3.0, 4);      // the calf's
+  add("mother", 2.9, 10, 0.8, 3);    // blows
+  add("calf", 2.2, 10, 0.8, 3);
+  add("calf", 7.7, 16, 3.2, 4);      // the calf pops back up from its dip
+  add("calf", 8.3, 10, 0.8, 3);
+  add("mother", 11.0, 0, 1.8, 8);    // sinking: long, gentle swells
+  add("calf", 11.6, 0, 1.4, 7);
+  // The wake: a small bow wave from each head as it swims, while it is at the surface.
+  if (P.wake > 0) for (const who of ["mother", "calf"]) {
+    for (let t = 2.6; t < 10.6; t += 0.85) {
+      const s = stateOf(WHALES[who], t);
+      if (s.out < 0.8) continue;
+      EVENTS.push({t, x: s.x + 22 * s.scale, a: 0.55 * P.wake * s.scale / P.size, w: hump(3.5)});
+    }
+  }
+}
+
+function ripples(x, t) {
+  const g = 220 * P.speed * P.speed;
+  const nu = 0.5 / P.reach;
+  let h = 0;
+  for (const e of EVENTS) {
+    const age = t - e.t;
+    if (age <= 0) continue;
+    const r = Math.abs(x - e.x);
+    let s = 0;
+    for (let i = 0; i < KS.length; i++) {
+      const k = KS[i];
+      s += e.w[i] * Math.cos(k * r) * Math.cos(Math.sqrt(g * k) * age) * Math.exp(-nu * k * k * age - 0.12 * age / P.reach);
+    }
+    // The hump of water is pushed up over a quarter second, not conjured in one frame.
+    h += e.a * s * smoother(age / 0.25);
+  }
+  return h * P.ripple;
+}
+
+function surface(x, t, ss) {
+  let h = mounds(x, ss) + ripples(x, t);
+  h = Math.max(-1.6, h);                              // a trough can only eat into the track so far
+  const calm = ease((x - LEFT) / 8) * ease((SEA_END - x) / 8);   // still at the bar's ends
+  return CY - 2 - h * calm;
+}
+
+// --- Spouts: every particle is a pure function of its age ------------------------------------------
+function rng(seed) { return () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }; }
+const DROPS = (() => { const r = rng(7); return Array.from({length: 46}, () => ({
+  delay: r() * 0.25, v: 0.75 + r() * 0.35, spread: (r() - 0.5) * 2, size: 0.45 + r() * 0.75, life: 1.3 + r() * 0.8 })); })();
+const MIST = (() => { const r = rng(19); return Array.from({length: 9}, () => ({
+  delay: 0.15 + r() * 0.35, h: 0.75 + r() * 0.3, dx: (r() - 0.5) * 3, r: 1.4 + r() * 1.4 })); })();
+
+// (bx, by): the blowhole now, so the column stays joined to it. (ox, oy): where it blew, where the
+// spray hangs and drifts while the whale swims on. k scales the whole spout (the calf's is small).
+function drawSpout(c, a, bx, by, ox, oy, k, th) {
+  if (a < 0 || a > 3.2) return;
+  const top = 15 * P.blow * k * P.size / 1.25;
+  const g = 34, v0 = Math.sqrt(2 * g * top);
+  const wind = 3.5;
+  c.fillStyle = th.spray;
+  const rise = Math.min(top * 0.9, v0 * Math.min(a, v0 / g) - 0.5 * g * Math.min(a, v0 / g) ** 2);
+  const colAlpha = 0.75 * (1 - ease((a - 0.3) / 0.6));
+  if (colAlpha > 0.01 && rise > 0.5) {
+    const lean = wind * a * a, r = 1.6 * Math.sqrt(k);
+    c.globalAlpha = colAlpha;
+    c.beginPath();
+    c.moveTo(bx - 0.5, by);
+    c.quadraticCurveTo(ox - 0.9 + lean * 0.3, oy - rise * 0.5, ox - r + lean, oy - rise);
+    c.arc(ox + lean, oy - rise, r, Math.PI, 0);
+    c.quadraticCurveTo(ox + 0.9 + lean * 0.3, oy - rise * 0.5, bx + 0.5, by);
+    c.closePath(); c.fill();
+  }
+  for (const m of MIST) {
+    const age = a - m.delay; if (age <= 0) continue;
+    const e = ease(age / 0.5);
+    const alpha = 0.32 * e * (1 - ease((age - 0.5) / 1.8));
+    if (alpha <= 0.005) continue;
+    c.globalAlpha = alpha;
+    c.beginPath();
+    c.arc(ox + m.dx * k * (1 + age) + wind * age * age, oy - top * m.h * e + age * 1.2, m.r * Math.sqrt(k) * (0.6 + age * 1.1), 0, 7);
+    c.fill();
+  }
+  for (const d of DROPS) {
+    const age = a - d.delay; if (age <= 0 || age > d.life) continue;
+    const v = v0 * d.v;
+    const y = v * age - 0.5 * g * age * age;
+    if (y < -1) continue;
+    const x = d.spread * k * (0.6 + 3.2 * age) + wind * age * age;
+    c.globalAlpha = 0.85 * (1 - ease((age - d.life * 0.5) / (d.life * 0.5)));
+    c.beginPath(); c.arc(ox + x, oy - y, d.size * Math.sqrt(k) * (1 - 0.3 * age / d.life), 0, 7); c.fill();
+  }
+  c.globalAlpha = 1;
+}
+
+// --- Drawing ------------------------------------------------------------------------------------
+function states(t) { return [stateOf(WHALES.mother, t), stateOf(WHALES.calf, t)]; }
+
+function drawWhale(c, s, ss, xs, ys, th) {
+  if (s.out <= 0.001) return;
+  const m = matrixOf(s, ss);
+  c.save();
+  c.beginPath(); c.moveTo(LEFT - 10, -5);
+  for (let i = 0; i < xs.length; i++) c.lineTo(xs[i], ys[i] + 0.3);
+  c.lineTo(SEA_END, -5); c.closePath(); c.clip();
+  c.transform(m.a, m.b, m.c, m.d, m.e, m.f);
+  c.lineJoin = "round";
+  c.strokeStyle = th.bg; c.lineWidth = 1.6 / s.scale; c.stroke(BODY);   // knock-out outline
+  c.fillStyle = th[s.w.colour]; c.fill(BODY);
+  c.strokeStyle = th.line; c.lineWidth = 0.45; c.lineCap = "round";
+  c.globalAlpha = 0.7; c.stroke(MOUTH); c.globalAlpha = 0.38; c.stroke(PLEATS); c.globalAlpha = 1;
+  c.fillStyle = th.flip; c.fill(FLIPPER); c.strokeStyle = th.bg; c.lineWidth = 0.4; c.stroke(FLIPPER);
+  c.fillStyle = th.line; c.beginPath(); c.arc(13.6, 1.3, 0.5, 0, 7); c.fill();
+  c.restore();
+}
+
+function frame(cv, t, theme) {
+  const th = THEMES[theme];
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = cv.id === "small" ? W : cv.clientWidth || 800;
+  const k = cssW / W;
+  if (cv.width !== Math.round(cssW * dpr)) {
+    cv.width = Math.round(cssW * dpr); cv.height = Math.round(H * k * dpr);
+    cv.style.width = cssW + "px"; cv.style.height = H * k + "px";
+  }
+  const c = cv.getContext("2d");
+  c.setTransform(dpr * k, 0, 0, dpr * k, 0, 0);
+  c.fillStyle = th.bg; c.fillRect(0, 0, W, H);
+
+  c.fillStyle = th.inactive; c.beginPath(); c.roundRect(THUMB + 2 + GAP, CY - 2, W - 8 - (THUMB + 2 + GAP), 4, 2); c.fill();
+  c.fillStyle = th.track; c.beginPath(); c.roundRect(THUMB - 2, CY - 12, 4, 24, 2); c.fill();
+  c.fillStyle = th.text; c.font = "6px -apple-system,system-ui,sans-serif";
+  c.fillText("1:24", LEFT, H - 3); c.textAlign = "right"; c.fillText("3:58", W - 8, H - 3); c.textAlign = "left";
+
+  placeEvents();
+  const ss = states(t);
+  const xs = []; for (let x = LEFT; x <= SEA_END + 0.001; x += 0.5) xs.push(x);
+  const ys = xs.map(x => surface(x, t, ss));
+
+  // Keep everything clear of the thumb, as the app does.
+  c.save(); c.beginPath(); c.rect(0, 0, SEA_END + 2, H); c.clip();
+  drawWhale(c, ss[0], ss, xs, ys, th);   // the mother
+  drawWhale(c, ss[1], ss, xs, ys, th);   // the calf, on the near side
+  c.restore();
+
+  // The sea: the played track, its top edge the water surface.
+  c.fillStyle = th.track;
+  c.beginPath();
+  c.moveTo(xs[0], CY + 2);
+  for (let i = 0; i < xs.length; i++) c.lineTo(xs[i], ys[i]);
+  c.lineTo(SEA_END, CY + 2); c.closePath(); c.fill();
+  c.beginPath(); c.arc(LEFT, CY, 2, Math.PI / 2, Math.PI * 1.5); c.fill();
+  c.beginPath(); c.arc(SEA_END, CY, 2, -Math.PI / 2, Math.PI / 2); c.fill();
+
+  for (const s of ss) {
+    for (const at of s.w.blows) {
+      const a = t - at;
+      if (a < 0 || a > 3.2) continue;
+      const b = matrixOf(s, ss).transformPoint(BLOWHOLE);
+      const then = states(at);
+      const o = matrixOf(then[s.w === WHALES.mother ? 0 : 1], then).transformPoint(BLOWHOLE);
+      drawSpout(c, a, b.x, Math.min(b.y, surface(b.x, t, ss)), o.x, o.y, s.w.blowScale, th);
+    }
+  }
+}
+
+// --- Controls -------------------------------------------------------------------------------------
+const $ = id => document.getElementById(id);
+for (const [key, label, min, max, step] of KNOBS) {
+  const l = document.createElement("label");
+  l.innerHTML = `<span>${label}<b id="v-${key}"></b></span><input type="range" min="${min}" max="${max}" step="${step}" id="k-${key}">`;
+  $("knobs").appendChild(l);
+  const inp = l.querySelector("input");
+  inp.value = P[key];
+  inp.addEventListener("input", () => { P[key] = +inp.value; show(); });
+}
+function show() { for (const [key] of KNOBS) $("v-" + key).textContent = (+P[key]).toFixed(2) + (key === "station" ? "" : "×"); }
+$("reset").onclick = () => { Object.assign(P, DEFAULTS); for (const [key] of KNOBS) $("k-" + key).value = P[key]; show(); };
+show();
+
+let t = 0, playing = true, last = performance.now();
+$("play").onclick = () => { playing = !playing; $("play").textContent = playing ? "Pause" : "Play"; };
+$("restart").onclick = () => { t = 0; };
+$("scrub").addEventListener("input", e => { t = +e.target.value; playing = false; $("play").textContent = "Play"; });
+$("theme").value = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+
+function tick(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (playing) t = (t + dt * +$("rate").value) % LOOP;
+  $("scrub").value = t; $("time").textContent = t.toFixed(2) + " s / " + LOOP + " s";
+  frame($("big"), t, $("theme").value);
+  frame($("small"), t, $("theme").value);
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+</script></body></html>

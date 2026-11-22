@@ -1,0 +1,564 @@
+<!doctype html>
+<!--
+  Copyright (c) 2026 crunchbank (WhaleSong). Licensed under the GNU General Public License,
+  version 3 or (at your option) any later version.
+  Animated mockup of the whale-sightings breach, for tuning before it goes into WhaleSightings.kt.
+  Same engine and settings as the surface, cruise and fluke mockups: units are dp, the played part
+  of the progress bar is the sea, and every disturbance sends real ripples along it.
+-->
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Whale Breach Mockup</title>
+<style>
+:root{--bg:#f4f5f8;--fg:#1b1c20;--mute:#5d606a;--card:#fff;--line:#dfe1e8}
+@media (prefers-color-scheme:dark){:root{--bg:#0c0d10;--fg:#e4e5ea;--mute:#9a9ca6;--card:#17181c;--line:#2a2c33}}
+body{background:var(--bg);color:var(--fg);font:15px/1.45 -apple-system,system-ui,sans-serif;margin:0;padding:24px 16px}
+main{max-width:860px;margin:auto}h1{font-size:22px;margin:0 0 4px}h2{font-size:16px;margin:22px 0 8px}
+p{color:var(--mute);margin:4px 0 12px}
+.card{background:var(--card);border-radius:12px;padding:12px;margin-bottom:12px}
+canvas{display:block;border-radius:6px;max-width:100%}
+#big{width:100%}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
+button,select{font:inherit;font-size:14px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
+input[type=range]{flex:1;min-width:120px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:6px 20px}
+.grid label{display:flex;flex-direction:column;font-size:13px;color:var(--mute)}
+.grid label span{display:flex;justify-content:space-between}.grid b{color:var(--fg);font-weight:600}
+.t{font-variant-numeric:tabular-nums;min-width:96px;font-size:14px}
+ol{color:var(--mute);padding-left:20px;margin:6px 0}
+</style></head><body><main>
+<h1>Breach</h1>
+<p>Modelled on the motion of the reference animation, drawn with our own humpback. A breach is
+momentum: the whale races in just below the surface, tail beating hard, its bow wave humping the
+water, and keeps travelling forward the whole time. The water
+wells up where it is coming, then it bursts out steeply, nose first, tail kicking, throwing a skirt
+of spray. At the top it flings both long flippers out wide. It hangs for a moment,
+rolls over onto its back in the air as it flies on, flippers sweeping round with the roll and its tail rolling too, flashing the whole spread fluke for a moment, and comes crashing down on its back well ahead of where it came out, throat grooves up and tail curling, in a huge
+splash: a crown of spray, a tower of mist, a slick of white foam, and the biggest ripples of any
+sighting. Settings carried over: whale 1.5×, bulge 0.5×, ripple speed 0.75×. The panel is much
+taller than the others, because a breaching humpback towers over the bar.</p>
+
+<div class="card">
+  <canvas id="big"></canvas>
+  <div class="bar">
+    <button id="play">Pause</button><button id="restart">Restart</button>
+    <select id="rate"><option value="1">1×</option><option value="0.5">½×</option><option value="0.25">¼×</option></select>
+    <select id="theme"><option value="dark">Dark</option><option value="light">Light</option></select>
+    <input id="scrub" type="range" min="0" max="1" step="0.0005" value="0"><span class="t" id="time"></span>
+  </div>
+  <h2>Roughly phone size</h2>
+  <canvas id="small"></canvas>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0">Tune it</h2>
+  <p>Drag the sliders. Read the values out to me, or describe what's wrong, and I'll put them into the app.</p>
+  <div class="grid" id="knobs"></div>
+  <div class="bar"><button id="reset">Reset all</button></div>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0">The beats</h2>
+  <ol id="beats"></ol>
+</div>
+</main>
+<script>
+"use strict";
+const BODY_D = "M25.2,0.5 Q25.2,-0.9 23.6,-1.4 Q22.9,-1.6 22.2,-1.8 Q21.23,-1.62 20.45,-2.23 Q19.48,-2.05 18.7,-2.65 Q17.73,-2.47 16.95,-3.08 Q15.98,-2.9 15.2,-3.5 Q13.6,-4.7 11.6,-4.6 C6,-5.6 -1,-6.4 -6,-6.3 Q-8.6,-6.3 -10,-7.0 Q-11.2,-8.4 -12.4,-8.3 Q-12.7,-7.4 -13.8,-6.4 Q-14.38,-5.88 -15.14,-5.76 Q-15.72,-5.24 -16.48,-5.12 Q-17.06,-4.6 -17.82,-4.48 Q-18.4,-3.96 -19.16,-3.84 Q-19.74,-3.32 -20.5,-3.2 C-22.2,-2.4 -23.6,-1.5 -25,-1.0 C-28.5,-1.3 -32,-0.9 -35.2,0.9 Q-31.5,1.3 -25,0.9 C-18,2.0 -12,3.6 -6,5.0 C0,6.7 6.5,7.0 10.5,6.0 C15,4.9 20.5,3.2 23.6,2.2 Q25.6,1.6 25.2,0.5 Z";
+const BODY = new Path2D(BODY_D);
+const FLIPPER = new Path2D("M13.6,2.6 C11,5.6 6.5,9.2 0.8,11.6 Q-0.42,11.58 -1.33,12.4 Q-2.56,12.38 -3.47,13.2 Q-4.69,13.18 -5.6,14 Q-6.6,14.3 -5.6,13.0 C-2,10.2 2.5,7.6 8.2,4.2 Z");
+const MOUTH = new Path2D("M25.1,0.9 Q19,1.4 12.8,2.6");
+const PLEATS = new Path2D("M22.4,2.2 Q11,6.4 -4,5.0 M20.6,3.0 Q10,6.8 -1.5,5.7 M18.6,3.8 Q9,7.1 1.5,6.3");
+const FLIP_ROOT = {x: 12.4, y: 3.2};   // body units: where the flipper joins, about which it swings
+const BEND_AT = -15;                   // body units: the tail flexes about here
+// The app icon's fluke, in icon units: root of the stock at y 62, notch at (54, 44.2), tips at y 30.
+// As the whale rolls, its tail rolls too: side-on it is the edge-on blade of the body outline; a
+// quarter of the way round it is seen flat, both blades spread across the line of the body.
+const FLUKE_D = "M48.9,84 C49.94,73 51.22,62.5 51.56,56.2 C47.5,53.6 40.31,50.9 35.67,46.6 C31.73,42.9 29.64,37.6 29.52,30.2 Q31.96,33.6 34.98,35 Q36.54,35.02 37.57,36.03 Q39.13,36.05 40.16,37.07 Q41.72,37.08 42.75,38.1 Q44.31,38.12 45.34,39.13 Q46.9,39.15 47.93,40.17 Q49.49,40.18 50.52,41.2 C52.14,41.9 53.3,43 54,44.2 C54.7,43 55.86,41.9 57.48,41.2 Q58.51,40.18 60.07,40.17 Q61.1,39.15 62.66,39.13 Q63.69,38.12 65.25,38.1 Q66.28,37.08 67.84,37.07 Q68.87,36.05 70.43,36.03 Q71.46,35.02 73.02,35 Q76.04,33.6 78.48,30.2 C78.36,37.6 76.27,42.9 72.33,46.6 C67.69,50.9 60.5,53.6 56.44,56.2 C56.78,62.5 58.06,73 59.1,84 Z";
+const PED_X = -25;            // body units: the peduncle, where the fluke joins
+const FLUKE_K = 0.36;         // body units per icon unit
+const FLUKE_ROOT = 62, ROOT_OVERLAP = 3;
+const FLASH_FROM = 0.32, FLASH_FULL = 0.45;   // spread at which the flat fluke appears / takes over
+const flatFlukes = new Map();
+// The flat fluke at a given spread (1 = fully sideways), laid along the body axis pointing back
+// from the peduncle. Only the blades spread; the stock always matches the body's tail stock.
+function flatFluke(spread) {
+  const key = Math.round(spread * 100);
+  if (flatFlukes.has(key)) return flatFlukes.get(key);
+  const sx = key / 100, stock = 1.9 / (5.5 * FLUKE_K);
+  const w = iy => lerp(sx, stock, smoother((iy - 48) / 9));
+  const d = FLUKE_D.replace(/(-?[\d.]+),(-?[\d.]+)/g, (q, ix, iy) =>
+    (PED_X + (+iy - FLUKE_ROOT) * FLUKE_K).toFixed(2) + "," + ((+ix - 54) * w(+iy) * FLUKE_K).toFixed(2));
+  const p = new Path2D(d); flatFlukes.set(key, p); return p;
+}
+
+const THEMES = {
+  dark:  {bg:"#111318", track:"#a8c7fa", inactive:"#44474e", flip:"#e3ecff", far:"#86a6dc", line:"#0b2a57", spray:"#dbe7ff", foam:"#eef4ff", text:"#c4c6d0"},
+  light: {bg:"#f8f9ff", track:"#2f5ea8", inactive:"#d7dbe6", flip:"#cfe0ff", far:"#24497f", line:"#f8f9ff", spray:"#5c86c9", foam:"#9fbbe6", text:"#43474e"},
+};
+
+// The bar, in dp, with a lot of headroom above it: the whale towers over it.
+const W = 200, H = 108, CY = 90, LEFT = 8, THUMB = 150, GAP = 6;
+const SEA_END = THUMB - 2 - GAP;
+const WATER = CY - 2;
+const EXIT_AT = 44;     // where it breaks the surface; the run-up starts well behind, under water
+
+const DEFAULTS = {
+  ripple: 1.0, speed: 0.75, reach: 1.0, bulge: 1.65, size: 1.5,
+  forward: 1.0,  // how fast it is travelling forward as it leaves the water
+  leap: 1.65,    // how far out of the water it gets
+  air: 1.0,      // hang time: above 1 is floatier, below snappier
+  fling: 1.0,    // how wide the flippers go
+  bend: 1.0,     // how much the body flexes: the tail's kick and curl
+  splash: 1.0,   // the landing's spray, mist and foam
+};
+const KNOBS = [
+  ["forward","Forward speed",   0, 2, 0.05],
+  ["leap",   "Leap height",     0.4, 1.8, 0.05],
+  ["air",    "Hang time",       0.6, 1.8, 0.05],
+  ["fling",  "Flippers flung out", 0, 1.3, 0.05],
+  ["bend",   "Body flex",       0, 2, 0.05],
+  ["splash", "Splash",          0, 2, 0.05],
+  ["size",   "Whale size",      0.6, 1.8, 0.05],
+  ["ripple", "Ripple strength", 0, 2.5, 0.05],
+  ["speed",  "Ripple speed",    0.3, 2.5, 0.05],
+  ["reach",  "Ripple reach",    0.3, 3, 0.05],
+  ["bulge",  "Water welling up first", 0, 2.5, 0.05],
+];
+const P = Object.assign({}, DEFAULTS);
+
+const ease = v => { const c = Math.min(1, Math.max(0, v)); return c * c * (3 - 2 * c); };
+const smoother = v => { const c = Math.min(1, Math.max(0, v)); return c * c * c * (c * (c * 6 - 15) + 10); };
+const lerp = (a, b, k) => a + (b - a) * k;
+const bump = v => v <= 0 || v >= 1 ? 0 : v < 0.5 ? smoother(2 * v) : smoother(2 - 2 * v);
+const deg = 180 / Math.PI;
+
+// --- The leap: a projectile -----------------------------------------------------------------------
+// The whale's middle flies a parabola: launched from deep below so that it crosses the surface at
+// full speed. Everything else (its pitch, the flex of its tail, its flippers) is timed off that
+// flight, so changing the leap or the hang time keeps every beat in step.
+function flight() {
+  const s = P.size / 1.5;
+  const g = 48 / (P.air * P.air);                       // dp/s²
+  const depth = 34 * s;                                  // where the run-up starts
+  const apex = 13 * P.leap * s;                          // the middle's height above water at the top
+  const v0 = Math.sqrt(2 * g * (depth + apex));
+  const start = 1.6;                                     // when the run-up begins
+  const up = v0 / g;
+  const atTop = start + up;
+  const cross = start + (v0 - Math.sqrt(v0 * v0 - 2 * g * depth)) / g;   // breaks the surface
+  const land = start + (v0 + Math.sqrt(v0 * v0 - 2 * g * depth)) / g;    // middle back at the water
+  // It charges in fast from behind and keeps going: a breach is momentum, not a hop on the spot.
+  const vx = 32 * P.forward * s / P.air;
+  const X0 = EXIT_AT - vx * (cross - start);
+  return {g, depth, apex, v0, start, up, atTop, cross, land, vx, X0};
+}
+let F = flight();
+let EXIT_X = 0;   // where it breaks the surface, worked out from the flight
+
+// The roll: 0 belly down, 1 on its back. It turns over in the air, about its own long axis.
+const rollAt = t => smoother((t - (F.cross + 0.05)) / (F.land - F.cross - 0.05));
+
+function bodyAt(t) {
+  const f = F;
+  const a = Math.max(0, t - f.start);
+  let cy = WATER + f.depth - f.v0 * a + 0.5 * f.g * a * a;
+  if (t > f.land) {                                     // under again: the water slows it hard
+    const u = t - f.land, vLand = f.v0 - f.g * (f.land - f.start);
+    cy = WATER - vLand * 0.9 * (1 - Math.exp(-u * 1.2)) / 1.2 + 10 * u * u;
+  }
+  // Forward all the way: fast through the run-up and the flight, carried on under the water.
+  const flown = Math.min(a, f.land - f.start), after = Math.max(0, t - f.land);
+  const cx = f.X0 + f.vx * flown + f.vx * (1 - Math.exp(-after * 1.8)) / 1.8;
+  // Pitch: steeply nose up as it charges out, then over forwards the way it is going.
+  const over = smoother((t - (f.cross - 0.1)) / (f.land - f.cross + 0.25));
+  const angle = lerp(-66, 14, over) + 6 * smoother((t - f.land) / 0.8);
+  // Swimming hard on the run-up: strong, quick tail beats, then one big kick as it leaves the
+  // water; straight at the top; the tail swings up behind it as it comes down.
+  const beats = 12 * Math.sin((t - f.start) * 2 * Math.PI / 0.42) * smoother((t - f.start) / 0.3) * (1 - smoother((t - f.cross + 0.25) / 0.3));
+  const kick = 18 * bump((t - (f.cross - 0.3)) / 0.8);
+  const curl = -16 * smoother((t - f.atTop) / (f.land - f.atTop + 0.3));
+  const bend = P.bend * (beats + kick + curl);
+  const r = rollAt(t);
+  // The flippers are fixed to the body and roll with it (see flipperView). Out of the water they
+  // are flung out sideways, wide like wings, and splayed a little forward; as it lands they fold
+  // back flat against its flanks.
+  const fling = P.fling * smoother((t - (f.cross - 0.05)) / 0.5);
+  const tuck = smoother((t - f.land + 0.15) / 0.5);        // folded flat against its flanks as it lands
+  const near = 0, far = 0;
+  // The tail rolls with the body: seen flat, fully spread, only for the moment it is a quarter
+  // of the way round, a brief flash of the whole fluke.
+  const spread = Math.pow(Math.sin(Math.PI * r), 3);
+  return {cx, cy, angle, bend, near, far, r, spread, fling, tuck, out: smoother((t - f.cross) / 0.4)};
+}
+
+// --- The roll ------------------------------------------------------------------------------------
+// A round body looks much the same whichever way up it is: what changes is which side the
+// throat bulge, the dorsal fin and the flippers are on. So the body's outline is sampled once as a
+// back line and a belly line, and the roll slides each towards the mirror of the other: halfway
+// over, the outline is symmetrical, the whale seen square from below; on its back, the throat bulge
+// is on top and the fin underneath.
+const ROLL_SHAPES = new Map();
+let BACK = null, BELLY = null, XS = null;
+function sampleBody() {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", BODY_D); svg.appendChild(path);
+  svg.style.cssText = "position:absolute;width:0;height:0"; document.body.appendChild(svg);
+  const L = path.getTotalLength(), pts = [];
+  for (let i = 0; i <= 600; i++) { const p = path.getPointAtLength(L * i / 600); pts.push([p.x, p.y]); }
+  svg.remove();
+  let tip = 0; pts.forEach((p, i) => { if (p[0] < pts[tip][0]) tip = i; });
+  const back = pts.slice(0, tip + 1), belly = pts.slice(tip);
+  const at = (line, x) => {             // y on a line at x, by its nearest crossing
+    let best = null;
+    for (let i = 0; i < line.length - 1; i++) {
+      const [x1, y1] = line[i], [x2, y2] = line[i + 1];
+      if ((x - x1) * (x - x2) <= 0 && x1 !== x2) { const y = y1 + (y2 - y1) * (x - x1) / (x2 - x1); if (best === null) best = y; }
+    }
+    return best;
+  };
+  XS = []; for (let x = 25.2; x >= -35.2; x -= 0.25) XS.push(x);
+  BACK = XS.map(x => at(back, x)); BELLY = XS.map(x => at(belly, x));
+  for (let i = 0; i < XS.length; i++) {            // the nose tip and fluke tip: close the lines
+    if (BACK[i] === null) BACK[i] = BELLY[i] ?? 0.5;
+    if (BELLY[i] === null) BELLY[i] = BACK[i];
+  }
+}
+function bodyPath(r) {
+  const key = Math.round(r * 60);
+  if (ROLL_SHAPES.has(key)) return ROLL_SHAPES.get(key);
+  const k = key / 60;
+  const top = XS.map((x, i) => lerp(BACK[i], -BELLY[i], k)), bot = XS.map((x, i) => lerp(BELLY[i], -BACK[i], k));
+  const p = new Path2D();
+  p.moveTo(XS[0], top[0]);
+  for (let i = 1; i < XS.length; i++) p.lineTo(XS[i], top[i]);
+  for (let i = XS.length - 1; i >= 0; i--) p.lineTo(XS[i], bot[i]);
+  p.closePath();
+  ROLL_SHAPES.set(key, p); return p;
+}
+
+function bodyMatrix(b) {
+  const sc = P.size;
+  return new DOMMatrix().translate(b.cx, b.cy).rotate(b.angle).scale(sc);
+}
+
+// --- Spray: every particle is a pure function of time ------------------------------------------
+function rng(seed) { return () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }; }
+const G_DROP = 55;
+let DROPS = [], MISTS = [], FOAM = null;
+function buildSpray() {
+  const f = F, r = rng(41);
+  DROPS = []; MISTS = [];
+  const s = P.size / 1.5;
+  // The skirt of spray thrown up as it bursts out.
+  const ex = EXIT_X;
+  for (let i = 0; i < 46; i++) {
+    const side = r() < 0.5 ? -1 : 1;
+    DROPS.push({at: f.cross + r() * 0.45, x: ex + side * (2 + r() * 9) * s, y: WATER,
+      vx: side * (4 + r() * 14) * s, vy: (30 + r() * 30) * s, size: 0.35 + r() * 0.7});
+  }
+  // The landing: a crown of spray along the length of the body as it slaps down.
+  const lb = bodyMatrix(bodyAt(f.land));
+  const n = lb.transformPoint({x: 25, y: 0}), tl = lb.transformPoint({x: -33, y: 0});
+  const x1 = Math.min(n.x, tl.x), x2 = Math.max(n.x, tl.x), mid = (x1 + x2) / 2;
+  const count = Math.round(110 * P.splash);
+  for (let i = 0; i < count; i++) {
+    const x = lerp(x1, x2, r());
+    const out = Math.sign(x - mid) || 1;
+    DROPS.push({at: f.land - 0.05 + r() * 0.35, x, y: WATER,
+      vx: out * (6 + r() * 30) * s + (r() - 0.5) * 8, vy: (25 + r() * 55) * s * Math.sqrt(P.splash),
+      size: 0.4 + r() * 1.0});
+  }
+  // A tower of mist that billows up and drifts.
+  for (let i = 0; i < Math.round(16 * P.splash); i++) {
+    MISTS.push({at: f.land + r() * 0.4, x: lerp(x1, x2, 0.15 + 0.7 * r()), h: (10 + r() * 22) * s * P.splash,
+      r: (2 + r() * 3.5) * s, drift: (r() - 0.3) * 4});
+  }
+  FOAM = {x1: x1 - 4, x2: x2 + 4, at: f.land};
+  // Every drop lands somewhere, at a time we can work out.
+  for (const d of DROPS) {
+    const fall = (d.vy + Math.sqrt(d.vy * d.vy)) / G_DROP;     // back down to the water it left
+    d.land = d.at + fall;
+  }
+}
+
+// --- The water -------------------------------------------------------------------------------
+const KS = []; { const n = 70, k0 = 0.03, k1 = 2.0; for (let i = 0; i < n; i++) KS.push(k0 + (k1 - k0) * i / (n - 1)); }
+const HUMPS = new Map();
+function hump(sigma) {
+  if (HUMPS.has(sigma)) return HUMPS.get(sigma);
+  const w = KS.map(k => Math.exp(-(k * sigma) * (k * sigma) / 4));
+  const s = w.reduce((a, b) => a + b, 0);
+  const r = w.map(v => v / s); HUMPS.set(sigma, r); return r;
+}
+let EVENTS = [];
+function placeEvents() {
+  const f = F, s = P.size / 1.5;
+  EVENTS = [];
+  const ev = (t, x, a, sigma) => EVENTS.push({t, x, a, w: hump(sigma)});
+  // Each beat of its tail on the run-up shoves the water.
+  for (let tb = f.start + 0.25; tb < f.cross - 0.1; tb += 0.42) ev(tb, bodyAt(tb).cx - 26 * s, 1.1 * P.bend, 4);
+  ev(f.cross, EXIT_X, 4.5 * s, 6);                               // bursts out
+  ev(f.land, (FOAM.x1 + FOAM.x2) / 2, 8 * s * P.splash, 12);     // the slap down: the big one
+  ev(f.land + 0.12, FOAM.x1 + 6, 3 * s * P.splash, 7);
+  ev(f.land + 0.12, FOAM.x2 - 6, 3 * s * P.splash, 7);
+  let i = 0;
+  for (const d of DROPS) if (i++ % 3 === 0) ev(d.land, d.x + d.vx * (d.land - d.at), 0.25 * d.size * P.splash, 2);
+}
+
+function ripples(x, t) {
+  const g = 220 * P.speed * P.speed;
+  const nu = 0.5 / P.reach;
+  let h = 0;
+  for (const e of EVENTS) {
+    const age = t - e.t;
+    if (age <= 0) continue;
+    const r = Math.abs(x - e.x);
+    if (r > 30 + 60 * age) continue;                    // not reached yet: skip the sum
+    let s = 0;
+    for (let i = 0; i < KS.length; i++) {
+      const k = KS[i];
+      s += e.w[i] * Math.cos(k * r) * Math.cos(Math.sqrt(g * k) * age) * Math.exp(-nu * k * k * age - 0.12 * age / P.reach);
+    }
+    h += e.a * s * smoother(age / 0.25);
+  }
+  return h * P.ripple;
+}
+
+// The water wells up over the whale before it bursts out, then collapses into the hole it leaves.
+// The water humps up over the whale as it races in just below the surface (a travelling bow wave,
+// growing as it nears the top), then collapses into the hole it leaves.
+function mound(x, t) {
+  const f = F, s = P.size / 1.5;
+  const b = bodyAt(Math.min(t, f.cross));
+  const d = x - (b.cx + 14 * s);
+  const k = smoother((t - f.start) / (f.cross - f.start)) * (1 - smoother((t - f.cross) / 0.35));
+  return 4 * P.bulge * s * k * Math.exp(-(d * d) / (200 * s));
+}
+
+function surface(x, t) {
+  let h = mound(x, t) + ripples(x, t);
+  h = Math.max(-1.6, h);
+  const calm = ease((x - LEFT) / 8) * ease((SEA_END - x) / 8);
+  return WATER - h * calm;
+}
+
+// --- Drawing ------------------------------------------------------------------------------------
+// --- Flippers in the round ------------------------------------------------------------------------
+// Each flipper is a flat blade fixed to the side of a round body. Seen from the side, a point on
+// the body at angle a round its long axis (0 = straight down, towards the belly; positive = the
+// near side, towards us) shows at height cos(a) and faces us by sin(a). Rolling the body by phi
+// adds phi to every such angle. So each flipper's root travels round the body, its blade tilts
+// (drawn at its full height when it hangs straight down or up, foreshortened as it turns towards or
+// away from us, edge-on as it points straight at us), and it passes behind the body once its side
+// has turned away. Halfway over, the belly is turned to us and the flippers, flung out sideways,
+// show spread wide, up and down.
+const ROOT_A = 35;                  // degrees round from the belly to where a flipper joins
+const ROOT_R = FLIP_ROOT.y / Math.cos(ROOT_A / deg);
+function flipperView(b, side) {     // side: +1 near, -1 far
+  const phi = 180 * b.r;
+  // The blade's tilt out from straight down: hanging, flung out wide, then folded flat against the
+  // flank (pointing out of the picture, so it vanishes edge-on) as it slaps down.
+  const hang = lerp(18 + 62 * b.fling, 90, b.tuck);
+  const rootA = (side * ROOT_A + phi) / deg, bladeA = (side * hang + phi) / deg;
+  return {
+    rootY: ROOT_R * Math.cos(rootA),
+    scaleY: Math.cos(bladeA),                                  // its height as drawn, signed
+    depth: ROOT_R * Math.sin(rootA) + 9 * Math.sin(bladeA),    // + towards us: in front of the body
+    splay: -34 * b.fling,                                      // swept forward a little, in its own plane
+  };
+}
+function mixColour(a, b, k) {
+  const h = s => [1, 3, 5].map(i => parseInt(s.slice(i, i + 2), 16));
+  const x = h(a), y = h(b);
+  return "rgb(" + x.map((v, i) => Math.round(v + (y[i] - v) * k)).join(",") + ")";
+}
+
+function drawWhale(c, b, th) {
+  const m = bodyMatrix(b);
+  const tailM = DOMMatrix.fromMatrix(m).translate(BEND_AT, 0).rotate(b.bend).translate(-BEND_AT, 0);
+  const body = bodyPath(b.r);
+  const flipSide = 1 - 2 * b.r;                 // +1: belly (and flippers) below; -1: on its back
+  const inM = (mm, clipX0, clipX1, fn) => {
+    c.save(); c.transform(mm.a, mm.b, mm.c, mm.d, mm.e, mm.f);
+    c.beginPath(); c.rect(clipX0, -40, clipX1 - clipX0, 80); c.clip(); fn(); c.restore();
+  };
+  const flipper = v => {
+    c.save(); c.transform(m.a, m.b, m.c, m.d, m.e, m.f);
+    c.translate(FLIP_ROOT.x, v.rootY);
+    c.scale(1, v.scaleY);
+    c.rotate(v.splay / deg);
+    c.translate(-FLIP_ROOT.x, -FLIP_ROOT.y);
+    c.lineJoin = "round";
+    // White on its near face, shading darker as it turns away from us.
+    const k = smoother((v.depth + 3) / 6);
+    c.strokeStyle = th.bg; c.lineWidth = (0.5 + 0.7 * (1 - k)) / P.size;
+    c.stroke(FLIPPER);
+    c.fillStyle = mixColour(th.far, th.flip, k); c.fill(FLIPPER);
+    c.restore();
+  };
+  const views = [flipperView(b, 1), flipperView(b, -1)];
+  c.lineJoin = "round";
+  // Flippers on the side turned away from us go behind the body.
+  for (const v of views) if (v.depth < 0) flipper(v);
+  // The body in two pieces so the tail can flex, drawn in two passes so it reads as one animal:
+  // every outline first, then every fill on top, so no seam shows where the pieces overlap.
+  // As the fluke turns flat, the body's own edge-on tail is trimmed back to the peduncle and the
+  // flat fluke takes over; in between both are drawn, as one shape.
+  const flat = b.spread >= FLASH_FROM;
+  const cut = lerp(-40, PED_X - 0.3, smoother((b.spread - FLASH_FROM) / (FLASH_FULL - FLASH_FROM)));
+  const fluke = flat ? flatFluke(Math.max(0.32, b.spread)) : null;
+  const flukeClip = PED_X + ROOT_OVERLAP * FLUKE_K;
+  c.strokeStyle = th.bg;
+  inM(m, BEND_AT - 1.5, 30, () => { c.lineWidth = 1.6 / P.size; c.stroke(body); });
+  inM(tailM, cut, BEND_AT + 1.5, () => { c.lineWidth = 1.6 / P.size; c.stroke(body); });
+  if (flat) inM(tailM, -60, flukeClip, () => { c.lineWidth = 1.6 / P.size; c.stroke(fluke); });
+  c.fillStyle = th.track;
+  inM(m, BEND_AT - 1.5, 30, () => c.fill(body));
+  inM(tailM, cut, BEND_AT + 1.5, () => c.fill(body));
+  if (flat) inM(tailM, -60, flukeClip, () => c.fill(fluke));
+  // Throat grooves, mouth and eye ride round with the roll, fading as they turn edge-on.
+  const face = Math.min(1, Math.abs(flipSide) * 1.6);
+  if (face > 0.02) inM(m, BEND_AT, 30, () => {
+    c.scale(1, flipSide);
+    c.strokeStyle = th.line; c.lineWidth = 0.45; c.lineCap = "round";
+    c.globalAlpha = 0.7 * face; c.stroke(MOUTH); c.globalAlpha = 0.45 * face; c.stroke(PLEATS);
+    c.globalAlpha = face; c.fillStyle = th.line; c.beginPath(); c.arc(13.6, 1.3, 0.5, 0, 7); c.fill();
+    c.globalAlpha = 1;
+  });
+  // Halfway over, the whale's pale belly is turned to us.
+  const belly = 1 - Math.abs(flipSide);
+  if (belly > 0.05) inM(m, -30, 30, () => {
+    c.clip(body); c.globalAlpha = 0.45 * belly; c.fillStyle = th.flip;
+    c.beginPath(); c.ellipse(4, 0, 17, 3.2, 0, 0, 7); c.fill(); c.globalAlpha = 1;
+  });
+  // Flippers on the side turned towards us, in front.
+  for (const v of views.filter(v => v.depth >= 0).sort((p, q) => p.depth - q.depth)) flipper(v);
+}
+
+function frame(cv, t, theme) {
+  const th = THEMES[theme];
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = cv.id === "small" ? W : cv.clientWidth || 800;
+  const k = cssW / W;
+  if (cv.width !== Math.round(cssW * dpr)) {
+    cv.width = Math.round(cssW * dpr); cv.height = Math.round(H * k * dpr);
+    cv.style.width = cssW + "px"; cv.style.height = H * k + "px";
+  }
+  const c = cv.getContext("2d");
+  c.setTransform(dpr * k, 0, 0, dpr * k, 0, 0);
+  c.fillStyle = th.bg; c.fillRect(0, 0, W, H);
+  c.fillStyle = th.inactive; c.beginPath(); c.roundRect(THUMB + 2 + GAP, CY - 2, W - 8 - (THUMB + 2 + GAP), 4, 2); c.fill();
+  c.fillStyle = th.track; c.beginPath(); c.roundRect(THUMB - 2, CY - 12, 4, 24, 2); c.fill();
+  c.fillStyle = th.text; c.font = "6px -apple-system,system-ui,sans-serif";
+  c.fillText("1:24", LEFT, H - 3); c.textAlign = "right"; c.fillText("3:58", W - 8, H - 3); c.textAlign = "left";
+
+  const b = bodyAt(t);
+  const xs = []; for (let x = LEFT; x <= SEA_END + 0.001; x += 0.5) xs.push(x);
+  const ys = xs.map(x => surface(x, t));
+
+  // Mist behind the whale: soft-edged puffs that billow up, spread and thin out.
+  for (const m of MISTS) {
+    const a = t - m.at; if (a <= 0 || a > 3.2) continue;
+    const e = ease(a / 0.6);
+    const alpha = 0.32 * e * (1 - ease((a - 0.6) / 2.4));
+    if (alpha < 0.005) continue;
+    const x = m.x + m.drift * a, y = WATER - m.h * e + a * 2, r = m.r * (0.9 + a * 1.1);
+    const gr = c.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, th.spray); gr.addColorStop(1, th.spray + "00");
+    c.globalAlpha = alpha; c.fillStyle = gr;
+    c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
+  }
+  c.globalAlpha = 1;
+
+  // The whale, only above the water and clear of the thumb.
+  c.save();
+  c.beginPath(); c.moveTo(LEFT - 10, -5);
+  for (let i = 0; i < xs.length; i++) c.lineTo(xs[i], ys[i] + 0.3);
+  c.lineTo(SEA_END, -5); c.closePath(); c.clip();
+  drawWhale(c, b, th);
+  c.restore();
+
+  // The sea.
+  c.fillStyle = th.track;
+  c.beginPath(); c.moveTo(xs[0], CY + 2);
+  for (let i = 0; i < xs.length; i++) c.lineTo(xs[i], ys[i]);
+  c.lineTo(SEA_END, CY + 2); c.closePath(); c.fill();
+  c.beginPath(); c.arc(LEFT, CY, 2, Math.PI / 2, Math.PI * 1.5); c.fill();
+  c.beginPath(); c.arc(SEA_END, CY, 2, -Math.PI / 2, Math.PI / 2); c.fill();
+
+  // Foam: a white slick on the water where it landed, fading.
+  if (FOAM && t > FOAM.at && P.splash > 0) {
+    const a = t - FOAM.at;
+    const k = ease(a / 0.3) * (1 - ease((a - 1.2) / 2.8));
+    if (k > 0.01) {
+      c.fillStyle = th.foam; c.globalAlpha = 0.75 * k;
+      c.beginPath();
+      const spread = 3 * a;
+      const x1 = Math.max(LEFT, FOAM.x1 - spread), x2 = Math.min(SEA_END, FOAM.x2 + spread);
+      for (let x = x1; x <= x2; x += 0.5) c.lineTo(x, surface(x, t) - 0.2);
+      for (let x = x2; x >= x1; x -= 0.5) {
+        const edge = Math.min(1, (x - x1) / 6, (x2 - x) / 6);
+        c.lineTo(x, surface(x, t) + 1.4 * edge * (0.7 + 0.3 * Math.sin(x * 1.7)));
+      }
+      c.closePath(); c.fill(); c.globalAlpha = 1;
+    }
+  }
+
+  // Spray in flight, in front of everything.
+  c.fillStyle = th.spray;
+  for (const d of DROPS) {
+    if (t < d.at || t > d.land) continue;
+    const a = t - d.at;
+    const x = d.x + d.vx * a, y = d.y - d.vy * a + 0.5 * G_DROP * a * a;
+    if (x < LEFT || x > SEA_END) continue;
+    c.globalAlpha = 0.9;
+    c.beginPath(); c.ellipse(x, y, d.size * 0.75, d.size * (0.9 + Math.abs(d.vy - G_DROP * a) / 90), 0, 0, 7); c.fill();
+  }
+  c.globalAlpha = 1;
+}
+
+// --- Controls -------------------------------------------------------------------------------------
+const $ = id => document.getElementById(id);
+const loopLen = () => F.land + 5.5;
+function rebuild() {
+  F = flight(); EXIT_X = bodyAt(F.cross).cx + 8 * P.size / 1.5; buildSpray(); placeEvents();
+  ROLL_SHAPES.clear();
+  const f = F, r = v => v.toFixed(1) + " s";
+  $("beats").innerHTML = [
+    `<b>${r(f.start)}</b>: it races in just below the surface, tail beating hard, its bow wave humping the water.`,
+    `<b>${r(f.cross)}</b>: it bursts out nose first and steep, still charging forward, tail kicking, throwing a skirt of spray.`,
+    `<b>${r(f.atTop)}</b>: the top: rolling over in the air as it flies on, its pale belly turned to us, flippers sweeping round with the roll.`,
+    `<b>${r(f.land)}</b>: it crashes down on its back, throat grooves up, well ahead of where it came out, in a crown of spray, a tower of mist and a slick of foam. Its momentum carries it on under the water.`,
+    `<b>${r(f.land + 0.5)}–${r(loopLen())}</b>: spray rains down, every drop rippling the sea, and the big rings run out along the bar.`,
+  ].map(s => `<li>${s}</li>`).join("");
+}
+for (const [key, label, min, max, step] of KNOBS) {
+  const l = document.createElement("label");
+  l.innerHTML = `<span>${label}<b id="v-${key}"></b></span><input type="range" min="${min}" max="${max}" step="${step}" id="k-${key}">`;
+  $("knobs").appendChild(l);
+  const inp = l.querySelector("input");
+  inp.value = P[key];
+  inp.addEventListener("input", () => { P[key] = +inp.value; show(); rebuild(); });
+}
+function show() { for (const [key] of KNOBS) $("v-" + key).textContent = (+P[key]).toFixed(2) + "×"; }
+$("reset").onclick = () => { Object.assign(P, DEFAULTS); for (const [key] of KNOBS) $("k-" + key).value = P[key]; show(); rebuild(); };
+sampleBody(); show(); rebuild();
+
+let t = 0, playing = true, last = performance.now();
+$("play").onclick = () => { playing = !playing; $("play").textContent = playing ? "Pause" : "Play"; };
+$("restart").onclick = () => { t = 0; };
+$("scrub").addEventListener("input", e => { t = +e.target.value * loopLen(); playing = false; $("play").textContent = "Play"; });
+$("theme").value = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+
+function tick(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  const L = loopLen();
+  if (playing) t = (t + dt * +$("rate").value) % L;
+  $("scrub").value = t / L; $("time").textContent = t.toFixed(2) + " s / " + L.toFixed(1) + " s";
+  frame($("big"), t, $("theme").value);
+  frame($("small"), t, $("theme").value);
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+</script></body></html>

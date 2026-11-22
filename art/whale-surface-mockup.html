@@ -1,0 +1,349 @@
+<!doctype html>
+<!--
+  Copyright (c) 2026 crunchbank (WhaleSong). Licensed under the GNU General Public License,
+  version 3 or (at your option) any later version.
+  Animated mockup of the whale-sightings "surface and blow" moment, for tuning before it goes
+  into WhaleSightings.kt. Units are dp. The played part of the progress bar is the sea: its top
+  edge is the water surface, and the whale's arrival sends real (dispersive) ripples along it.
+-->
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Whale Surface Mockup</title>
+<style>
+:root{--bg:#f4f5f8;--fg:#1b1c20;--mute:#5d606a;--card:#fff;--line:#dfe1e8}
+@media (prefers-color-scheme:dark){:root{--bg:#0c0d10;--fg:#e4e5ea;--mute:#9a9ca6;--card:#17181c;--line:#2a2c33}}
+body{background:var(--bg);color:var(--fg);font:15px/1.45 -apple-system,system-ui,sans-serif;margin:0;padding:24px 16px}
+main{max-width:860px;margin:auto}h1{font-size:22px;margin:0 0 4px}h2{font-size:16px;margin:22px 0 8px}
+p{color:var(--mute);margin:4px 0 12px}
+.card{background:var(--card);border-radius:12px;padding:12px;margin-bottom:12px}
+canvas{display:block;border-radius:6px;max-width:100%}
+#big{width:100%}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
+button,select{font:inherit;font-size:14px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
+input[type=range]{flex:1;min-width:120px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:6px 20px}
+.grid label{display:flex;flex-direction:column;font-size:13px;color:var(--mute)}
+.grid label span{display:flex;justify-content:space-between}.grid b{color:var(--fg);font-weight:600}
+.t{font-variant-numeric:tabular-nums;min-width:96px;font-size:14px}
+ol{color:var(--mute);padding-left:20px;margin:6px 0}
+</style></head><body><main>
+<h1>Surface and blow</h1>
+<p>The played part of the bar is the sea; its top edge is the water. As the whale comes up, the water
+bulges, then sends ripples out both ways. They behave like real water: longer waves run ahead, shorter
+ones trail behind, and each crest grows and fades as it passes through the group. The head breaks the
+surface first, the whale levels out, and it blows a single bushy spout. It rests and bobs, then sinks
+back. The animation loops every 13 seconds.</p>
+
+<div class="card">
+  <canvas id="big"></canvas>
+  <div class="bar">
+    <button id="play">Pause</button><button id="restart">Restart</button>
+    <select id="rate"><option value="1">1×</option><option value="0.5">½×</option><option value="0.25">¼×</option></select>
+    <select id="theme"><option value="dark">Dark</option><option value="light">Light</option></select>
+    <input id="scrub" type="range" min="0" max="13" step="0.01" value="0"><span class="t" id="time"></span>
+  </div>
+  <h2>Roughly phone size</h2>
+  <canvas id="small"></canvas>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0">Tune it</h2>
+  <p>Drag the sliders. Read the values out to me, or describe what's wrong, and I'll put them into the app.</p>
+  <div class="grid" id="knobs"></div>
+  <div class="bar"><button id="reset">Reset all</button></div>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0">The beats</h2>
+  <ol>
+    <li><b>0.7 s</b>: the water stirs and bulges, and a first, gentle ripple sets off.</li>
+    <li><b>1.45 s</b>: the head breaks the surface nose-up, climbing along its path, and the main ripple goes out.</li>
+    <li><b>2.2 s</b>: it blows. The spray hangs where it was blown and drifts downwind as the whale swims on.</li>
+    <li><b>2.5–6.3 s</b>: it levels out and bobs gently; each bob sends out a small ripple.</li>
+    <li><b>6.3–10 s</b>: it sinks slowly away nose-down, lingering near the top, tipping about its tail so the tail stays under, with a long, gentle swell, and the sea settles. It swims forward at one steady speed the whole time.</li>
+  </ol>
+</div>
+</main>
+<script>
+"use strict";
+const BODY = new Path2D("M25.2,0.5 Q25.2,-0.9 23.6,-1.4 Q22.9,-1.6 22.2,-1.8 Q21.23,-1.62 20.45,-2.23 Q19.48,-2.05 18.7,-2.65 Q17.73,-2.47 16.95,-3.08 Q15.98,-2.9 15.2,-3.5 Q13.6,-4.7 11.6,-4.6 C6,-5.6 -1,-6.4 -6,-6.3 Q-8.6,-6.3 -10,-7.0 Q-11.2,-8.4 -12.4,-8.3 Q-12.7,-7.4 -13.8,-6.4 Q-14.38,-5.88 -15.14,-5.76 Q-15.72,-5.24 -16.48,-5.12 Q-17.06,-4.6 -17.82,-4.48 Q-18.4,-3.96 -19.16,-3.84 Q-19.74,-3.32 -20.5,-3.2 C-22.2,-2.4 -23.6,-1.5 -25,-1.0 C-28.5,-1.3 -32,-0.9 -35.2,0.9 Q-31.5,1.3 -25,0.9 C-18,2.0 -12,3.6 -6,5.0 C0,6.7 6.5,7.0 10.5,6.0 C15,4.9 20.5,3.2 23.6,2.2 Q25.6,1.6 25.2,0.5 Z");
+const FLIPPER = new Path2D("M13.6,2.6 C11,5.6 6.5,9.2 0.8,11.6 Q-0.42,11.58 -1.33,12.4 Q-2.56,12.38 -3.47,13.2 Q-4.69,13.18 -5.6,14 Q-6.6,14.3 -5.6,13.0 C-2,10.2 2.5,7.6 8.2,4.2 Z");
+const MOUTH = new Path2D("M25.1,0.9 Q19,1.4 12.8,2.6");
+const PLEATS = new Path2D("M22.4,2.2 Q11,6.4 -4,5.0 M20.6,3.0 Q10,6.8 -1.5,5.7 M18.6,3.8 Q9,7.1 1.5,6.3");
+const BLOWHOLE = {x: 10.4, y: -4.9};
+const TAIL_PIVOT = -35;   // body units: the fluke tip
+const HEAD_PIVOT = 20;    // body units: the head
+const TRIM = -3.0;        // degrees nose-up about the head: keeps the tail under while it rests
+
+const THEMES = {
+  dark:  {bg:"#111318", track:"#a8c7fa", inactive:"#44474e", flip:"#e3ecff", line:"#0b2a57", spray:"#dbe7ff", text:"#c4c6d0"},
+  light: {bg:"#f8f9ff", track:"#2f5ea8", inactive:"#d7dbe6", flip:"#cfe0ff", line:"#f8f9ff", spray:"#5c86c9", text:"#43474e"},
+};
+
+// The bar, in dp: as the app draws it.
+const W = 200, H = 50, CY = 30, LEFT = 8, THUMB = 150, GAP = 6;
+const SEA_END = THUMB - 2 - GAP;
+const X0 = 54;          // where the whale is at the start of the loop, still under water
+const LOOP = 13;
+
+const DEFAULTS = {
+  ripple: 1.0,   // strength of the ripples
+  reach: 1.0,    // how far they carry before dying away
+  speed: 0.75,   // how fast the ripples travel
+  bulge: 0.5,    // the mound of water the whale pushes up
+  height: 1.65,  // how much of the whale shows above water
+  size: 1.5,     // whale scale
+  blow: 1.0,     // spout height
+  swim: 1.0,     // how fast it swims forward (1 = 3.2 dp/s)
+};
+const KNOBS = [
+  ["ripple", "Ripple strength", 0, 2.5, 0.05],
+  ["speed",  "Ripple speed",    0.3, 2.5, 0.05],
+  ["reach",  "Ripple reach",    0.3, 3, 0.05],
+  ["bulge",  "Bulge over the whale", 0, 2.5, 0.05],
+  ["height", "Whale out of the water", 0.4, 1.8, 0.05],
+  ["size",   "Whale size",      0.8, 1.8, 0.05],
+  ["blow",   "Blow height",     0.4, 2, 0.05],
+  ["swim",   "Swim speed",      0, 2.5, 0.05],
+];
+const P = Object.assign({}, DEFAULTS);
+
+const smoother = v => { const c = Math.min(1, Math.max(0, v)); return c * c * c * (c * (c * 6 - 15) + 10); };
+const ease = v => { const c = Math.min(1, Math.max(0, v)); return c * c * (3 - 2 * c); };
+const lerp = (a, b, k) => a + (b - a) * k;
+
+// --- The water -------------------------------------------------------------------------------
+// Each disturbance is an initial hump of water released at a time and place. Its free evolution is
+// the Cauchy-Poisson problem: a sum of waves, each travelling at its own speed (deep water,
+// omega = sqrt(g k)), so the hump spreads into a train with long waves out in front.
+const KS = []; { const n = 70, k0 = 0.03, k1 = 2.0; for (let i = 0; i < n; i++) KS.push(k0 + (k1 - k0) * i / (n - 1)); }
+const DK = KS[1] - KS[0];
+function hump(sigma) {   // spectral weights for a gaussian hump of width sigma, normalised to 1 at its peak
+  const w = KS.map(k => Math.exp(-(k * sigma) * (k * sigma) / 4));
+  const s = w.reduce((a, b) => a + b, 0);
+  return w.map(v => v / s);
+}
+// [time, x offset from the whale's middle in body units, amplitude dp, width dp]. Each one is
+// released where the whale is at that moment, so the ripples come from it as it swims.
+const EVENT_DEFS = [
+  [0.7, 6, 2.2, 6],      // the water stirs
+  [1.45, 16, 5.0, 5],    // head breaks the surface
+  [2.2, 10, 1.0, 3],     // the blow
+  [3.6, 2, 1.0, 5], [5.2, 2, 1.0, 5],   // bobbing at rest
+  [7.0, 0, 1.8, 8],      // sinks back: a long, gentle swell
+].map(([t, dx, a, s]) => ({t, dx, a, w: hump(s)}));
+let EVENTS = [];
+function placeEvents() { EVENTS = EVENT_DEFS.map(e => ({...e, x: swimX(e.t) + e.dx * P.size})); }
+
+function ripples(x, t) {
+  const g = 220 * P.speed * P.speed;
+  const nu = 0.5 / P.reach;
+  let h = 0;
+  for (const e of EVENTS) {
+    const age = t - e.t;
+    if (age <= 0) continue;
+    const r = Math.abs(x - e.x);
+    let s = 0;
+    for (let i = 0; i < KS.length; i++) {
+      const k = KS[i];
+      s += e.w[i] * Math.cos(k * r) * Math.cos(Math.sqrt(g * k) * age) * Math.exp(-nu * k * k * age - 0.12 * age / P.reach);
+    }
+    // The hump of water is pushed up over a quarter second, not conjured in one frame.
+    h += e.a * s * smoother(age / 0.25);
+  }
+  return h * P.ripple;
+}
+
+// --- The whale's routine as functions of time, so the scrubber can go anywhere -------------------
+// Everything is smooth to the second derivative (smootherstep), so nothing starts or stops with a
+// jolt. It swims forward at one steady speed the whole time, and its pitch follows its own path:
+// nose up while it climbs to the surface, level while it rests, nose down as it sinks.
+const swimX = t => X0 + 3.2 * P.swim * t;
+const DEEP = 20;
+function depthAt(t, withBob = true) {
+  const top = 1.6 - (P.height - 1) * 3.2;
+  const up = smoother((t - 0.5) / 2.0);
+  // A slow, stately sink: it lingers at the top and spends its time going under in sight, not
+  // after it has already gone.
+  const down = smoother((t - 6.3) / 5.6) ** 2.4;
+  const env = smoother((t - 2.2) / 1.2) * (1 - smoother((t - 5.3) / 0.8));   // still before it sinks
+  const bob = 0.45 * Math.sin((t - 2.2) * 2 * Math.PI / 1.6) * env;
+  return lerp(DEEP, top, up * (1 - down)) + (withBob ? bob : 0);
+}
+function state(t) {
+  const x = swimX(t);
+  const depth = depthAt(t);
+  // Pitch follows the climb and the dive; the bob only nods it a little, so it doesn't rock.
+  const d = t => depthAt(t, false), b = t => depthAt(t) - depthAt(t, false);
+  const vy = (d(t + 0.02) - d(t - 0.02)) / 0.04;                  // dp/s, positive = sinking
+  const vb = (b(t + 0.02) - b(t - 0.02)) / 0.04;
+  const deg = 180 / Math.PI;
+  // The climb pitches it nose-up along its path. The sink is a gentle, steady nose-down tilt
+  // about the fluke tip (see whaleMatrix), so the tail never lifts as the head goes down.
+  const climb = t < 5 ? 0.42 * Math.atan2(vy, 3.2 * P.swim + 12) * deg : 0;
+  const dive = 10 * smoother((t - 6.4) / 4.0);
+  const angle = -3 + climb + 0.15 * Math.atan2(vb, 12) * deg;
+  const out = 1 - smoother((depth - 2) / (DEEP - 2));               // 1 at the surface, 0 deep
+  const stir = smoother((t - 0.3) / 1.2) * (1 - smoother((t - 7.5) / 3.0));
+  return {x, depth, angle, dive, out, stir};
+}
+
+function mound(x, s) {
+  const d = x - (s.x + 6 * P.size);
+  return (s.stir * 0.9 + s.out * 1.4) * P.bulge * Math.exp(-(d * d) / 160);
+}
+
+function surface(x, t, s) {
+  let h = mound(x, s) + ripples(x, t);
+  h = Math.max(-1.6, h);                              // a trough can only eat into the track so far
+  const calm = ease((x - LEFT) / 8) * ease((SEA_END - x) / 8);   // still at the bar's ends
+  return CY - 2 - h * calm;
+}
+
+// --- Spout: every particle is a pure function of its age ------------------------------------------
+function rng(seed) { return () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }; }
+const DROPS = (() => { const r = rng(7); return Array.from({length: 46}, () => ({
+  delay: r() * 0.25, v: 0.75 + r() * 0.35, spread: (r() - 0.5) * 2, size: 0.45 + r() * 0.75, life: 1.3 + r() * 0.8 })); })();
+const MIST = (() => { const r = rng(19); return Array.from({length: 9}, () => ({
+  delay: 0.15 + r() * 0.35, h: 0.75 + r() * 0.3, dx: (r() - 0.5) * 3, r: 1.4 + r() * 1.4 })); })();
+const BLOW_AT = 2.2;
+
+function drawSpout(c, t, bx, by, ox, oy, th) {
+  const a = t - BLOW_AT;
+  if (a < 0 || a > 3.2) return;
+  const top = 15 * P.blow * P.size / 1.25;     // apex height in dp
+  const g = 34, v0 = Math.sqrt(2 * g * top);
+  const wind = 3.5;
+  c.fillStyle = th.spray;
+  // The column itself, shooting up out of the blowhole: what joins the spout to the whale.
+  const rise = Math.min(top * 0.9, v0 * Math.min(a, v0 / g) - 0.5 * g * Math.min(a, v0 / g) ** 2);
+  const colAlpha = 0.75 * (1 - ease((a - 0.3) / 0.6));
+  if (colAlpha > 0.01 && rise > 0.5) {
+    const lean = wind * a * a;
+    c.globalAlpha = colAlpha;
+    c.beginPath();
+    c.moveTo(bx - 0.5, by);
+    c.quadraticCurveTo(ox - 0.9 + lean * 0.3, oy - rise * 0.5, ox - 1.6 + lean, oy - rise);
+    c.arc(ox + lean, oy - rise, 1.6, Math.PI, 0);
+    c.quadraticCurveTo(ox + 0.9 + lean * 0.3, oy - rise * 0.5, bx + 0.5, by);
+    c.closePath(); c.fill();
+  }
+  for (const m of MIST) {                        // the bushy top, billowing and drifting
+    const age = a - m.delay; if (age <= 0) continue;
+    const k = ease(age / 0.5);
+    const alpha = 0.32 * k * (1 - ease((age - 0.5) / 1.8));
+    if (alpha <= 0.005) continue;
+    c.globalAlpha = alpha;
+    c.beginPath();
+    c.arc(ox + m.dx * (1 + age) + wind * age * age, oy - top * m.h * k + age * 1.2, m.r * (0.6 + age * 1.1), 0, 7);
+    c.fill();
+  }
+  for (const d of DROPS) {                       // droplets thrown up, falling back
+    const age = a - d.delay; if (age <= 0 || age > d.life) continue;
+    const v = v0 * d.v;
+    const y = v * age - 0.5 * g * age * age;
+    if (y < -1) continue;
+    const x = d.spread * (0.6 + 3.2 * age) + wind * age * age;
+    c.globalAlpha = 0.85 * (1 - ease((age - d.life * 0.5) / (d.life * 0.5)));
+    c.beginPath(); c.arc(ox + x, oy - y, d.size * (1 - 0.3 * age / d.life), 0, 7); c.fill();
+  }
+  c.globalAlpha = 1;
+}
+
+// --- Drawing ------------------------------------------------------------------------------------
+function frame(cv, t, theme) {
+  const th = THEMES[theme];
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = cv.id === "small" ? W : cv.clientWidth || 800;
+  const k = cssW / W;
+  if (cv.width !== Math.round(cssW * dpr)) {
+    cv.width = Math.round(cssW * dpr); cv.height = Math.round(H * k * dpr);
+    cv.style.width = cssW + "px"; cv.style.height = H * k + "px";
+  }
+  const c = cv.getContext("2d");
+  c.setTransform(dpr * k, 0, 0, dpr * k, 0, 0);
+  c.fillStyle = th.bg; c.fillRect(0, 0, W, H);
+
+  // Unplayed track, thumb, times: static.
+  c.fillStyle = th.inactive; c.beginPath(); c.roundRect(THUMB + 2 + GAP, CY - 2, W - 8 - (THUMB + 2 + GAP), 4, 2); c.fill();
+  c.fillStyle = th.track; c.beginPath(); c.roundRect(THUMB - 2, CY - 12, 4, 24, 2); c.fill();
+  c.fillStyle = th.text; c.font = "6px -apple-system,system-ui,sans-serif";
+  c.fillText("1:24", LEFT, H - 3); c.textAlign = "right"; c.fillText("3:58", W - 8, H - 3); c.textAlign = "left";
+
+  placeEvents();
+  const s = state(t);
+  const xs = []; for (let x = LEFT; x <= SEA_END + 0.001; x += 0.5) xs.push(x);
+  const ys = xs.map(x => surface(x, t, s));
+
+  // The whale, only where it is above the water.
+  // It rides the slow mound of water it pushes up, never the ripples: those would jolt it.
+  const m = whaleMatrix(s);
+  if (s.out > 0.001) {
+    c.save();
+    c.beginPath(); c.moveTo(LEFT - 10, -5);
+    for (let i = 0; i < xs.length; i++) c.lineTo(xs[i], ys[i] + 0.3);
+    c.lineTo(SEA_END, -5); c.closePath(); c.clip();
+    c.transform(m.a, m.b, m.c, m.d, m.e, m.f);
+    c.lineJoin = "round";
+    c.strokeStyle = th.bg; c.lineWidth = 1.6 / P.size; c.stroke(BODY);
+    c.fillStyle = th.track; c.fill(BODY);
+    c.strokeStyle = th.line; c.lineWidth = 0.45; c.lineCap = "round";
+    c.globalAlpha = 0.7; c.stroke(MOUTH); c.globalAlpha = 0.38; c.stroke(PLEATS); c.globalAlpha = 1;
+    c.fillStyle = th.flip; c.fill(FLIPPER); c.strokeStyle = th.bg; c.lineWidth = 0.4; c.stroke(FLIPPER);
+    c.fillStyle = th.line; c.beginPath(); c.arc(13.6, 1.3, 0.5, 0, 7); c.fill();
+    c.restore();
+  }
+
+  // The sea: the played track, its top edge the water surface.
+  c.fillStyle = th.track;
+  c.beginPath();
+  c.moveTo(xs[0], CY + 2);
+  for (let i = 0; i < xs.length; i++) c.lineTo(xs[i], ys[i]);
+  c.lineTo(SEA_END, CY + 2); c.closePath(); c.fill();
+  c.beginPath(); c.arc(LEFT, CY, 2, Math.PI / 2, Math.PI * 1.5); c.fill();
+  c.beginPath(); c.arc(SEA_END, CY, 2, -Math.PI / 2, Math.PI / 2); c.fill();
+
+  const b = m.transformPoint(BLOWHOLE);
+  const o = whaleMatrix(state(BLOW_AT)).transformPoint(BLOWHOLE);   // where it blew
+  drawSpout(c, t, b.x, Math.min(b.y, surface(b.x, t, s)), o.x, o.y, th);
+}
+
+function whaleMatrix(s) {
+  // As it sinks it tips forward about its fluke tip, not its middle, so the head goes down while
+  // the tail only sinks with the body, never lifting out of the water.
+  const px = TAIL_PIVOT * P.size;
+  return new DOMMatrix().translate(s.x, CY - 2 - mound(s.x, s) + s.depth)
+    .translate(px, 0).rotate(s.dive).translate(-px, 0).rotate(s.angle)
+    .translate(HEAD_PIVOT * P.size, 0).rotate(TRIM).translate(-HEAD_PIVOT * P.size, 0).scale(P.size);
+}
+
+// --- Controls -------------------------------------------------------------------------------------
+const $ = id => document.getElementById(id);
+const knobs = $("knobs");
+for (const [key, label, min, max, step] of KNOBS) {
+  const l = document.createElement("label");
+  l.innerHTML = `<span>${label}<b id="v-${key}"></b></span><input type="range" min="${min}" max="${max}" step="${step}" id="k-${key}">`;
+  knobs.appendChild(l);
+  const inp = l.querySelector("input");
+  inp.value = P[key];
+  inp.addEventListener("input", () => { P[key] = +inp.value; show(); });
+}
+function show() { for (const [key] of KNOBS) $("v-" + key).textContent = (+P[key]).toFixed(2) + "×"; }
+$("reset").onclick = () => { Object.assign(P, DEFAULTS); for (const [key] of KNOBS) $("k-" + key).value = P[key]; show(); };
+show();
+
+let t = 0, playing = true, last = performance.now();
+$("play").onclick = () => { playing = !playing; $("play").textContent = playing ? "Pause" : "Play"; };
+$("restart").onclick = () => { t = 0; };
+$("scrub").addEventListener("input", e => { t = +e.target.value; playing = false; $("play").textContent = "Play"; });
+$("theme").value = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+
+function tick(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (playing) t = (t + dt * +$("rate").value) % LOOP;
+  $("scrub").value = t; $("time").textContent = t.toFixed(2) + " s / 13 s";
+  frame($("big"), t, $("theme").value);
+  frame($("small"), t, $("theme").value);
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+</script></body></html>
