@@ -54,6 +54,9 @@ import kotlin.random.Random
  * overlay (the slider's own bounds are far too short for a breach), so no layout changes; the
  * progress thumb is left clear. Frames come from [Choreographer], not an animator, so it also runs
  * when the system animation scale is off. Between sightings nothing runs but one delayed callback.
+ *
+ * Sightings can also be summoned ([summon], the Now Playing easter-egg button): one starts at once,
+ * paused or playing, or waits its turn behind the one already showing.
  */
 class WhaleSightings(
     private val slider: Slider,
@@ -74,6 +77,21 @@ class WhaleSightings(
     private var lastSightingSong: Any? = NO_SONG
     private var nextSightingAt = 0L
     private var lastFrameNanos = 0L
+    /** Summoned sightings still to come. */
+    private var pending = 0
+    /** Whether the running sighting was summoned, and on which song. */
+    private var summoned = false
+    private var summonedSong: Any? = null
+
+    /** What [summon] did. */
+    enum class Summon {
+        /** A sighting started now. */
+        STARTED,
+        /** One is already showing; another will follow it. */
+        QUEUED,
+        /** Too little of the song has played for a whale yet; one will come once there is room. */
+        WAITING,
+    }
 
     /** Where on the bar this sighting is drawn: its sea's offset along the line, and its scale. */
     private var offsetDp = 0f
@@ -88,7 +106,8 @@ class WhaleSightings(
                     else min((frameTimeNanos - lastFrameNanos) / 1_000_000_000f, 0.05f)
                 lastFrameNanos = frameTimeNanos
                 clock += dt
-                if (fadeFrom < 0f && (!canContinue() || opacity() < 0.5f)) fadeFrom = clock
+                val carryOn = if (summoned) songKey() == summonedSong else canContinue()
+                if (fadeFrom < 0f && (!carryOn || opacity() < 0.5f)) fadeFrom = clock
                 if (clock >= r.duration || (fadeFrom >= 0f && clock - fadeFrom >= FADE)) {
                     stopSighting()
                     return
@@ -100,6 +119,15 @@ class WhaleSightings(
 
     private val scheduled = Runnable {
         if (!resumed || routine != null) return@Runnable
+        if (pending > 0) {
+            if (roomForSummoned()) {
+                pending--
+                startSighting(summon = true)
+            } else {
+                schedule()
+            }
+            return@Runnable
+        }
         // A new song is always due its first sighting; within a song, wait out the gap.
         val due = songKey() != lastSightingSong || SystemClock.elapsedRealtime() >= nextSightingAt
         if (due && canStart() && opacity() > 0.99f && seaWidthDp() >= MIN_SEA_DP) {
@@ -115,8 +143,29 @@ class WhaleSightings(
         schedule()
     }
 
+    /**
+     * Makes a sighting happen now, whether or not the song is playing, or queues one to follow the
+     * sighting already showing.
+     */
+    fun summon(): Summon {
+        if (routine != null) {
+            pending++
+            return Summon.QUEUED
+        }
+        if (roomForSummoned()) {
+            startSighting(summon = true)
+            return Summon.STARTED
+        }
+        pending++
+        schedule()
+        return Summon.WAITING
+    }
+
+    private fun roomForSummoned() = resumed && opacity() > 0.99f && seaWidthDp() >= MIN_SEA_DP
+
     /** Stops everything at once (screen left, or sightings turned off). */
     fun pause() {
+        pending = 0
         resumed = false
         handler.removeCallbacks(scheduled)
         stopSighting()
@@ -132,15 +181,17 @@ class WhaleSightings(
      * it has played, later ones 20–60 seconds after the last ended. Checking often, rather than
      * sleeping through the gap, means a song change mid-gap still gets its first sighting on time.
      */
-    private fun schedule() {
+    private fun schedule(delay: Long = POLL_MS) {
         handler.removeCallbacks(scheduled)
         if (!resumed) return
-        handler.postDelayed(scheduled, POLL_MS)
+        handler.postDelayed(scheduled, delay)
     }
 
-    private fun startSighting() {
+    private fun startSighting(summon: Boolean = false) {
         val host = slider.rootView as? ViewGroup ?: return
         sightings++
+        summoned = summon
+        summonedSong = songKey()
         lastSightingSong = songKey()
         routine = pickRoutine()
         // Each routine is designed in a sea of SEA_DP; a shorter played line scales it down to fit,
@@ -189,7 +240,8 @@ class WhaleSightings(
         if (wasRunning) {
             val gap = debugProp("debug.whalesong.gap")?.toLongOrNull()?.times(1000)
             nextSightingAt = SystemClock.elapsedRealtime() + (gap ?: Random.nextLong(MIN_GAP_MS, MAX_GAP_MS + 1))
-            schedule()
+            // A queued, summoned whale follows straight on; otherwise back to waiting.
+            schedule(if (pending > 0) QUEUE_DELAY_MS else POLL_MS)
         }
     }
 
@@ -412,6 +464,7 @@ class WhaleSightings(
 
     private companion object {
         const val POLL_MS = 1_000L
+        const val QUEUE_DELAY_MS = 400L
         const val MIN_GAP_MS = 20_000L
         const val MAX_GAP_MS = 60_000L
         /** The sea every routine was designed in, dp. */

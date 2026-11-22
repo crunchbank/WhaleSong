@@ -12,7 +12,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * Modifications copyright (c) 2026 crunchbank (WhaleSong): streaming mode button; whale
+ * Modifications copyright (c) 2026 crunchbank (WhaleSong): streaming mode button; the hidden
+ * whale sighting button (tap "Now playing" seven times); whale
  * sightings.
  *
  * You should have received a copy of the GNU General Public License
@@ -28,9 +29,11 @@ import android.content.res.ColorStateList
 import android.media.audiofx.AudioEffect
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
+import android.widget.Toast
 import androidx.preference.PreferenceManager
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -122,6 +125,9 @@ class PlaybackPanelFragment :
         }
         StreamingMode.addListener(streamingModeListener)
         updateStreamingMode()
+        // WhaleSong easter egg: tap "Now playing" seven times to show the whale sighting button.
+        binding.playbackToolbar.titleContainer.setOnClickListener { onTitleTapped() }
+        updateWhaleButton()
 
         binding.playbackPager?.apply {
             // intentional LTR override since thepager is a chronological element
@@ -260,6 +266,53 @@ class PlaybackPanelFragment :
     //    }
 
     private val streamingModeListener: () -> Unit = { updateStreamingMode() }
+
+    private var titleTaps = 0
+    private var lastTitleTap = 0L
+    private var eggToast: Toast? = null
+
+    private val whaleButtonOn: Boolean
+        get() =
+            PreferenceManager.getDefaultSharedPreferences(requireContext())
+                .getBoolean(getString(R.string.ws_key_whale_button), false)
+
+    /**
+     * Counts taps on the "Now playing" title, the way Android counts taps on its build number:
+     * seven in a row (each within a second and a half of the last) turn the whale sighting button
+     * on, or off again, with a countdown for the last three.
+     */
+    private fun onTitleTapped() {
+        val now = SystemClock.uptimeMillis()
+        if (now - lastTitleTap > TITLE_TAP_GAP_MS) titleTaps = 0
+        lastTitleTap = now
+        titleTaps++
+        val left = TITLE_TAPS - titleTaps
+        eggToast?.cancel()
+        if (left in 1..3) {
+            eggToast =
+                Toast.makeText(requireContext(),
+                        resources.getQuantityString(R.plurals.ws_lng_whale_taps, left, left), Toast.LENGTH_SHORT)
+                    .also { it.show() }
+        }
+        if (left > 0) return
+        titleTaps = 0
+        val on = !whaleButtonOn
+        PreferenceManager.getDefaultSharedPreferences(requireContext())
+            .edit()
+            .putBoolean(getString(R.string.ws_key_whale_button), on)
+            .apply()
+        updateWhaleButton()
+        eggToast =
+            Toast.makeText(requireContext(),
+                    if (on) R.string.ws_lng_whale_button_on else R.string.ws_lng_whale_button_off, Toast.LENGTH_SHORT)
+                .also { it.show() }
+    }
+
+    /** Shows the whale sighting button beside streaming mode only once it has been unlocked. */
+    private fun updateWhaleButton() {
+        val toolbar = binding?.playbackToolbar ?: return
+        toolbar.getMenuButton(R.id.action_whale_sighting)?.visibility = if (whaleButtonOn) View.VISIBLE else View.GONE
+    }
     private var whaleSightings: WhaleSightings? = null
 
     private var streamingButtonDefaults: Pair<ColorStateList?, ColorStateList?>? = null
@@ -308,6 +361,19 @@ class PlaybackPanelFragment :
     }
 
     override fun onMenuItemClick(item: MenuItem): Boolean {
+        if (item.itemId == R.id.action_whale_sighting) {
+            val message =
+                when (whaleSightings?.summon()) {
+                    WhaleSightings.Summon.QUEUED -> R.string.ws_lng_whale_queued
+                    WhaleSightings.Summon.WAITING -> R.string.ws_lng_whale_waiting
+                    else -> null
+                }
+            if (message != null) {
+                eggToast?.cancel()
+                eggToast = Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).also { it.show() }
+            }
+            return true
+        }
         if (item.itemId == R.id.action_streaming_mode) {
             StreamingMode.enabled = !StreamingMode.enabled
             requireContext()
@@ -495,5 +561,10 @@ class PlaybackPanelFragment :
             Direction.FORWARDS -> playbackModel.stepForward()
             Direction.BACKWARDS -> playbackModel.stepBackwards()
         }
+    }
+
+    private companion object {
+        const val TITLE_TAPS = 7
+        const val TITLE_TAP_GAP_MS = 1500L
     }
 }

@@ -196,3 +196,7 @@ small += '  <group android:translateX="-16" android:translateY="-15.5">\n'
 small += vpath(fluke_path(sc((50.6, 70.5))), "@android:color/white") + vpath(wave_band(70.0, 2.6, 18, 4.6), "@android:color/white")
 small += "  </group>\n</vector>\n"
 open(os.path.join(RES, "ic_auxio_24.xml"), "w").write(small)
+# The same glyph as a toolbar icon (the Now Playing "Whale sighting" button), tinted like the
+# toolbar's other icons rather than white.
+open(os.path.join(RES, "ic_whale_sighting_24.xml"), "w").write(
+    small.replace('android:tint="@android:color/white"', 'android:tint="?attr/colorControlNormal"'))

@@ -38,4 +38,15 @@
     <string name="ws_set_whale_sightings_desc">Now and then a humpback whale surfaces in the played part of the Now Playing progress line</string>
     <!-- Set once WhaleSong has asked for the notification permission, so it asks only once. -->
     <string name="ws_key_asked_notifications" translatable="false">ws_asked_notifications</string>
+    <!-- Easter egg: tap "Now playing" seven times for a button that summons a whale. -->
+    <string name="ws_key_whale_button" translatable="false">ws_whale_button</string>
+    <string name="ws_lbl_whale_sighting">Whale sighting</string>
+    <plurals name="ws_lng_whale_taps">
+        <item quantity="one">%d more tap…</item>
+        <item quantity="other">%d more taps…</item>
+    </plurals>
+    <string name="ws_lng_whale_button_on">There be whales! Whale sighting button on</string>
+    <string name="ws_lng_whale_button_off">Whale sighting button off</string>
+    <string name="ws_lng_whale_queued">Another whale is on its way</string>
+    <string name="ws_lng_whale_waiting">A whale will come once a little more of the song has played</string>
 </resources>

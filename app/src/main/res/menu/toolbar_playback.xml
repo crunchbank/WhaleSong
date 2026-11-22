@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
+    <!-- WhaleSong: summons a whale sighting. Hidden until unlocked by tapping "Now playing"
+         seven times; PlaybackPanelFragment shows or hides its button. -->
+    <item
+        android:id="@+id/action_whale_sighting"
+        android:icon="@drawable/ic_whale_sighting_24"
+        android:title="@string/ws_lbl_whale_sighting"
+        app:showAsAction="always" />
     <!-- WhaleSong: streaming mode on/off. -->
     <item
         android:id="@+id/action_streaming_mode"
