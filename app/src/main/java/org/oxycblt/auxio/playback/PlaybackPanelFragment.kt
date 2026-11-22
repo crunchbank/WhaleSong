@@ -24,6 +24,7 @@ package org.oxycblt.auxio.playback
 import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.media.audiofx.AudioEffect
 import android.os.Build
 import android.os.Bundle
@@ -34,12 +35,14 @@ import androidx.preference.PreferenceManager
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.Toolbar
+import androidx.appcompat.widget.TooltipCompat
 import androidx.core.view.updatePadding
 import androidx.dynamicanimation.animation.SpringForce
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import dagger.hilt.android.AndroidEntryPoint
 import kotlin.math.abs
+import com.google.android.material.R as MR
 import org.oxycblt.auxio.R
 import org.oxycblt.auxio.databinding.FragmentPlaybackPanelBinding
 import org.oxycblt.auxio.detail.DetailViewModel
@@ -56,6 +59,7 @@ import org.oxycblt.auxio.playback.ui.swiper.CoverPagerAdapter
 import org.oxycblt.auxio.playback.ui.swiper.UserAwarePagerCallback
 import org.oxycblt.auxio.ui.ViewBindingFragment
 import org.oxycblt.auxio.util.collectImmediately
+import org.oxycblt.auxio.util.getAttrColorCompat
 import org.oxycblt.auxio.util.dampen
 import org.oxycblt.auxio.util.recycler
 import org.oxycblt.auxio.util.showToast
@@ -258,12 +262,34 @@ class PlaybackPanelFragment :
     private val streamingModeListener: () -> Unit = { updateStreamingMode() }
     private var whaleSightings: WhaleSightings? = null
 
-    /** Shows whether streaming mode is on in the toolbar button. */
+    private var streamingButtonDefaults: Pair<ColorStateList?, ColorStateList?>? = null
+
+    /**
+     * Shows whether streaming mode is on in the toolbar button. AuxioToolbar copies a menu item into
+     * its button only once, when the menu is inflated, so the button itself is updated here; when on
+     * it is drawn as a selected toggle (tonal fill, accent-coloured icon).
+     */
     private fun updateStreamingMode() {
-        val item = binding?.playbackToolbar?.menu?.findItem(R.id.action_streaming_mode) ?: return
+        val toolbar = binding?.playbackToolbar ?: return
         val on = StreamingMode.enabled
-        item.setIcon(if (on) R.drawable.ic_streaming_mode_24 else R.drawable.ic_streaming_mode_off_24)
-        item.title = getString(if (on) R.string.ws_lbl_streaming_on else R.string.ws_lbl_streaming_off)
+        val label = getString(if (on) R.string.ws_lbl_streaming_on else R.string.ws_lbl_streaming_off)
+        toolbar.menu.findItem(R.id.action_streaming_mode)?.apply {
+            setIcon(if (on) R.drawable.ic_streaming_mode_24 else R.drawable.ic_streaming_mode_off_24)
+            title = label
+        }
+        val button = toolbar.getMenuButton(R.id.action_streaming_mode) ?: return
+        val defaults =
+            streamingButtonDefaults
+                ?: (button.iconTint to button.backgroundTintList).also { streamingButtonDefaults = it }
+        button.setIconResource(
+            if (on) R.drawable.ic_streaming_mode_24 else R.drawable.ic_streaming_mode_off_24)
+        button.iconTint =
+            if (on) button.context.getAttrColorCompat(MR.attr.colorOnSecondaryContainer) else defaults.first
+        button.backgroundTintList =
+            if (on) button.context.getAttrColorCompat(MR.attr.colorSecondaryContainer) else defaults.second
+        button.isSelected = on
+        button.contentDescription = label
+        TooltipCompat.setTooltipText(button, label)
     }
 
     override fun onDestroyBinding(binding: FragmentPlaybackPanelBinding) {
@@ -271,6 +297,7 @@ class PlaybackPanelFragment :
         whaleSightings?.pause()
         whaleSightings = null
         StreamingMode.removeListener(streamingModeListener)
+        streamingButtonDefaults = null
         binding.playbackRepeat.clearPendingIcon()
         binding.playbackSong.isSelected = false
         binding.playbackArtist.isSelected = false

@@ -2,7 +2,9 @@
 <!--
     Copyright (c) 2026 crunchbank (WhaleSong). Licensed under the GNU General Public License,
     version 3 or (at your option) any later version.
-    Streaming mode on: every song at one level. From Shark Music, by the same author.
+    Streaming mode on: every song at one level, even bars between two guide lines. The playback
+    panel draws its button as a selected toggle while it is on. Adapted from Shark Music, by the
+    same author.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
