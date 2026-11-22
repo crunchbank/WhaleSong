@@ -36,4 +36,6 @@
     <string name="ws_set_key_whale_sightings" translatable="false">ws_whale_sightings</string>
     <string name="ws_set_whale_sightings">Whale sightings</string>
     <string name="ws_set_whale_sightings_desc">Now and then a humpback whale surfaces in the played part of the Now Playing progress line</string>
+    <!-- Set once WhaleSong has asked for the notification permission, so it asks only once. -->
+    <string name="ws_key_asked_notifications" translatable="false">ws_asked_notifications</string>
 </resources>

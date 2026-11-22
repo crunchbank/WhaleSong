@@ -16,18 +16,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  * Modifications copyright (c) 2026 crunchbank (WhaleSong): a refused service start no longer
- * crashes the app; it is retried when the window has focus.
+ * crashes the app; it is retried when the window has focus. Asks once for the notification
+ * permission on first run.
  */
  
 package org.oxycblt.auxio
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.view.View
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
+import androidx.preference.PreferenceManager
 import androidx.core.view.updatePadding
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -68,6 +75,35 @@ class MainActivity : AppCompatActivity() {
         L.d("Activity created")
     }
 
+    /**
+     * Ask for the notification permission the first time WhaleSong runs. Android 13+ turns
+     * notifications off for an app until it asks, and Auxio never did, so scans ran with no
+     * progress shown anywhere outside the app. Asked once only: after that it is the user's choice,
+     * changed in the system settings.
+     */
+    private fun askForNotificationsOnce() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        val permission = Manifest.permission.POST_NOTIFICATIONS
+        if (ContextCompat.checkSelfPermission(this, permission) ==
+            PackageManager.PERMISSION_GRANTED) {
+            return
+        }
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        val key = getString(R.string.ws_key_asked_notifications)
+        if (prefs.getBoolean(key, false)) return
+        prefs.edit().putBoolean(key, true).apply()
+        notificationPermissionLauncher.launch(permission)
+    }
+
+    // WhaleSong: asks once for permission to post notifications (Android 13+), so library scans
+    // and playback show their progress and controls outside the app.
+    private val notificationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            L.d("Notification permission granted: $granted")
+        }
+
+    private var notificationsChecked = false
+
     // WhaleSong: true when Android refused to start the service; retried once we have focus.
     private var serviceStartPending = false
 
@@ -86,6 +122,12 @@ class MainActivity : AppCompatActivity() {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus && serviceStartPending) {
             startAuxioService()
+        }
+        // Asked only once the app is really on screen, never behind the lock screen, where the
+        // prompt could go unseen and still count as the one time it asks.
+        if (hasFocus && !notificationsChecked) {
+            notificationsChecked = true
+            askForNotificationsOnce()
         }
     }
 
