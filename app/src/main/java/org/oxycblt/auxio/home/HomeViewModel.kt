@@ -18,6 +18,7 @@
  
 package org.oxycblt.auxio.home
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -32,6 +33,7 @@ import org.oxycblt.auxio.playback.PlaySong
 import org.oxycblt.auxio.playback.PlaybackSettings
 import org.oxycblt.auxio.util.Event
 import org.oxycblt.auxio.util.MutableEvent
+import org.oxycblt.auxio.whale.favorites.Favorites
 import org.oxycblt.musikr.Album
 import org.oxycblt.musikr.Artist
 import org.oxycblt.musikr.Genre
@@ -219,6 +221,12 @@ constructor(
      *
      * @param sort The [Sort] to apply.
      */
+    /** WhaleSong: switches the Albums tab between all albums and favorites only. */
+    fun toggleFavoritesOnly(context: Context) {
+        Favorites.toggleOnlyFavorites(context)
+        homeGenerator.favoritesOnlyChanged()
+    }
+
     fun applyArtistSort(sort: Sort) {
         listSettings.artistSort = sort
     }

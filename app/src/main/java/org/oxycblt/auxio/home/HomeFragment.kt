@@ -71,6 +71,8 @@ import org.oxycblt.auxio.util.dampen
 import org.oxycblt.auxio.util.navigateSafe
 import org.oxycblt.auxio.util.showToast
 import org.oxycblt.auxio.whale.covers.CoverGrid
+import org.oxycblt.auxio.whale.favorites.Favorites
+import org.oxycblt.auxio.whale.favorites.HeartButton
 import org.oxycblt.auxio.whale.header.SingingWhale
 import org.oxycblt.musikr.IndexingProgress
 import org.oxycblt.musikr.Music
@@ -187,6 +189,7 @@ class HomeFragment : SelectionFragment<FragmentHomeBinding>() {
         for (type in MusicType.entries.filter(CoverGrid::supports)) {
             collectImmediately(CoverGrid.state(requireContext(), type)) { updateCoverButton() }
         }
+        collectImmediately(Favorites.onlyFavorites) { updateFavoritesButton() }
         collect(detailModel.toShow.flow, ::handleShow)
         collect(listModel.menu.flow, ::handleMenu)
         collectImmediately(listModel.selected, ::updateSelection)
@@ -216,6 +219,10 @@ class HomeFragment : SelectionFragment<FragmentHomeBinding>() {
             }
             R.id.action_cover_layout -> {
                 CoverGrid.toggle(requireContext(), homeModel.currentTabType.value)
+                true
+            }
+            R.id.action_favorites_only -> {
+                homeModel.toggleFavoritesOnly(requireContext())
                 true
             }
             R.id.action_unplayed -> {
@@ -286,6 +293,7 @@ class HomeFragment : SelectionFragment<FragmentHomeBinding>() {
     private fun updateCurrentTab(tabType: MusicType) {
         val binding = requireBinding()
         updateCoverButton()
+        updateFavoritesButton()
 
         // Update the scrolling view in AppBarLayout to align with the current tab's
         // scrolling state. This prevents the lift state from being confused as one
@@ -320,6 +328,21 @@ class HomeFragment : SelectionFragment<FragmentHomeBinding>() {
         button.contentDescription =
             getString(if (covers) R.string.ws_lbl_show_list else R.string.ws_lbl_show_covers)
         TooltipCompat.setTooltipText(button, button.contentDescription)
+    }
+
+    /** WhaleSong: on the Albums tab, a heart switches between all albums and favorites only. */
+    private fun updateFavoritesButton() {
+        val button =
+            requireBinding().homeNormalToolbar.getMenuButton(R.id.action_favorites_only) ?: return
+        button.isVisible = homeModel.currentTabType.value == MusicType.ALBUMS
+        if (!button.isVisible) return
+        val only = Favorites.onlyFavorites.value
+        HeartButton.update(
+            requireContext(),
+            button,
+            only,
+            getString(if (only) R.string.ws_lbl_favorites_all else R.string.ws_lbl_favorites_only),
+        )
     }
 
     private fun handleRecreate(recreate: Unit?) {

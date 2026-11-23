@@ -22,6 +22,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
+import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.findNavController
@@ -119,6 +120,8 @@ abstract class DetailFragment<P : MusicParent, C : Music> :
             setOnMenuItemClickListener(this@DetailFragment)
             setOnOverflowMenuClick { onOpenParentMenu() }
         }
+        // WhaleSong: the favorite heart is shown on album pages only (see AlbumDetailFragment).
+        binding.detailNormalToolbar.getMenuButton(R.id.action_favorite)?.isVisible = false
 
         binding.detailRecycler.apply { adapter = getDetailListAdapter() }
 

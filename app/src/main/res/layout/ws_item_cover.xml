@@ -17,6 +17,15 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- A heart on favorite albums. -->
+    <org.oxycblt.auxio.whale.favorites.FavoriteBadge
+        android:id="@+id/cover_favorite"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_margin="@dimen/spacing_small"
+        app:layout_constraintEnd_toEndOf="@+id/cover_image"
+        app:layout_constraintTop_toTopOf="@+id/cover_image" />
+
     <TextView
         android:id="@+id/cover_name"
         style="@style/Widget.Auxio.TextView.Item.Primary"

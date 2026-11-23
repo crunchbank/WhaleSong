@@ -24,6 +24,7 @@ import org.oxycblt.auxio.list.ListSettings
 import org.oxycblt.auxio.list.adapter.UpdateInstructions
 import org.oxycblt.auxio.music.MusicRepository
 import org.oxycblt.auxio.music.MusicType
+import org.oxycblt.auxio.whale.favorites.Favorites
 import org.oxycblt.musikr.Album
 import org.oxycblt.musikr.Artist
 import org.oxycblt.musikr.Genre
@@ -41,6 +42,9 @@ interface HomeGenerator {
     fun songs(): List<Song>
 
     fun albums(): List<Album>
+
+    /** WhaleSong: the Albums tab switched between all albums and favorites only. */
+    fun favoritesOnlyChanged()
 
     fun artists(): List<Artist>
 
@@ -84,6 +88,18 @@ private class HomeGeneratorImpl(
         homeSettings.registerListener(this)
         listSettings.registerListener(this)
         musicRepository.addUpdateListener(this)
+        Favorites.addListener(favoritesListener)
+    }
+
+    // WhaleSong: favorites only matter to the Albums tab while it shows only favorites.
+    private val favoritesListener = {
+        if (Favorites.onlyFavorites.value) {
+            invalidator.invalidateMusic(MusicType.ALBUMS, UpdateInstructions.Diff)
+        }
+    }
+
+    override fun favoritesOnlyChanged() {
+        invalidator.invalidateMusic(MusicType.ALBUMS, UpdateInstructions.Replace(0))
     }
 
     override fun onTabsChanged() {
@@ -144,6 +160,7 @@ private class HomeGeneratorImpl(
 
     override fun release() {
         musicRepository.removeUpdateListener(this)
+        Favorites.removeListener(favoritesListener)
         listSettings.unregisterListener(this)
         homeSettings.unregisterListener(this)
     }
@@ -154,7 +171,13 @@ private class HomeGeneratorImpl(
         musicRepository.library?.let { listSettings.songSort.songs(it.songs) } ?: emptyList()
 
     override fun albums() =
-        musicRepository.library?.let { listSettings.albumSort.albums(it.albums) } ?: emptyList()
+        musicRepository.library?.let { library ->
+            // WhaleSong: the Albums tab can show only favorites.
+            val albums =
+                if (Favorites.onlyFavorites.value) library.albums.filter(Favorites::isFavorite)
+                else library.albums
+            listSettings.albumSort.albums(albums)
+        } ?: emptyList()
 
     override fun artists() =
         musicRepository.library?.let { deviceLibrary ->

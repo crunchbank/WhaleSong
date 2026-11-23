@@ -17,6 +17,16 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- WhaleSong: a heart on favorite albums, over the cover's corner. -->
+    <org.oxycblt.auxio.whale.favorites.FavoriteBadge
+        android:id="@+id/parent_favorite"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:translationX="5dp"
+        android:translationY="-5dp"
+        app:layout_constraintEnd_toEndOf="@+id/parent_image"
+        app:layout_constraintTop_toTopOf="@+id/parent_image" />
+
     <TextView
         android:id="@+id/parent_name"
         style="@style/Widget.Auxio.TextView.Item.Primary"

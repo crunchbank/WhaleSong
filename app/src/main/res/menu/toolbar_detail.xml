@@ -11,6 +11,12 @@
         android:icon="@drawable/ic_shuffle_off_24"
         android:title="@string/lbl_shuffle"
         app:showAsAction="ifRoom" />
+    <!-- WhaleSong: favorite albums; shown on album pages only. -->
+    <item
+        android:id="@+id/action_favorite"
+        android:icon="@drawable/ic_favorite_border_24"
+        android:title="@string/ws_lbl_favorite_add"
+        app:showAsAction="always" />
     <item
         android:id="@+id/placeholder"
         android:title=""

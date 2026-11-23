@@ -113,6 +113,8 @@ class AlbumViewHolder private constructor(private val binding: ItemParentBinding
         binding.parentImage.bind(album)
         binding.parentName.text = album.name.resolve(binding.context)
         binding.parentInfo.text = album.artists.resolveNames(binding.context)
+        // WhaleSong: a heart on favorite albums.
+        binding.parentFavorite.album = album
     }
 
     override fun updatePlayingIndicator(isActive: Boolean, isPlaying: Boolean) {

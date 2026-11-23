@@ -126,6 +126,8 @@ private class ArtistAlbumViewHolder private constructor(private val binding: Ite
         binding.parentInfo.text =
             // Fall back to a friendlier "No date" text if the album doesn't have date information
             album.dates?.resolve(binding.context) ?: binding.context.getString(R.string.def_date)
+        // WhaleSong: a heart on favorite albums.
+        binding.parentFavorite.album = album
     }
 
     override fun updatePlayingIndicator(isActive: Boolean, isPlaying: Boolean) {

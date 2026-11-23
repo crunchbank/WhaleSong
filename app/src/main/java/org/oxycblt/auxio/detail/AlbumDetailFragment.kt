@@ -19,6 +19,8 @@
 package org.oxycblt.auxio.detail
 
 import android.os.Bundle
+import android.view.MenuItem
+import androidx.core.view.isVisible
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearSmoothScroller
@@ -41,6 +43,8 @@ import org.oxycblt.auxio.util.collectImmediately
 import org.oxycblt.auxio.util.getPlural
 import org.oxycblt.auxio.util.navigateSafe
 import org.oxycblt.auxio.util.showToast
+import org.oxycblt.auxio.whale.favorites.Favorites
+import org.oxycblt.auxio.whale.favorites.HeartButton
 import org.oxycblt.musikr.Album
 import org.oxycblt.musikr.Music
 import org.oxycblt.musikr.MusicParent
@@ -83,10 +87,36 @@ class AlbumDetailFragment : DetailFragment<Album, Song>() {
             ::updatePlayback,
         )
         collect(playbackModel.playbackDecision.flow, ::handlePlaybackDecision)
+        Favorites.addListener(favoriteListener)
+    }
+
+    // WhaleSong: the heart in the toolbar adds or removes this album from the favorites.
+    private val favoriteListener = ::updateFavoriteButton
+
+    private fun updateFavoriteButton() {
+        val album = detailModel.currentAlbum.value ?: return
+        val button = binding?.detailNormalToolbar?.getMenuButton(R.id.action_favorite) ?: return
+        val favorite = Favorites.isFavorite(album)
+        button.isVisible = true
+        HeartButton.update(
+            requireContext(),
+            button,
+            favorite,
+            getString(if (favorite) R.string.ws_lbl_favorite_remove else R.string.ws_lbl_favorite_add),
+        )
+    }
+
+    override fun onMenuItemClick(item: MenuItem): Boolean {
+        if (item.itemId == R.id.action_favorite) {
+            detailModel.currentAlbum.value?.let(Favorites::toggle)
+            return true
+        }
+        return super.onMenuItemClick(item)
     }
 
     override fun onDestroyBinding(binding: FragmentDetailBinding) {
         super.onDestroyBinding(binding)
+        Favorites.removeListener(favoriteListener)
         // Avoid possible race conditions that could cause a bad replace instruction to be consumed
         // during list initialization and crash the app. Could happen if the user is fast enough.
         detailModel.albumSongInstructions.consume()
@@ -154,6 +184,7 @@ class AlbumDetailFragment : DetailFragment<Album, Song>() {
         binding.detailPlayButton?.setOnClickListener { playbackModel.play(album) }
         binding.detailShuffleButton?.setOnClickListener { playbackModel.shuffle(album) }
         setToolbarPlaybackButtonsEnabled(true)
+        updateFavoriteButton()
         updatePlayback(
             playbackModel.song.value,
             playbackModel.parent.value,

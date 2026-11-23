@@ -35,6 +35,7 @@ import org.oxycblt.auxio.playback.formatDurationMs
 import org.oxycblt.auxio.util.getPlural
 import org.oxycblt.auxio.util.share
 import org.oxycblt.auxio.util.showToast
+import org.oxycblt.auxio.whale.favorites.Favorites
 import org.oxycblt.musikr.Artist
 import org.oxycblt.musikr.Genre
 import org.oxycblt.musikr.Playlist
@@ -110,6 +111,13 @@ class AlbumMenuDialogFragment : MenuDialogFragment<Menu.ForAlbum>() {
     // Nothing to disable in album menus.
     override fun getDisabledItemIds(menu: Menu.ForAlbum) = setOf<Int>()
 
+    // WhaleSong: "Add to favorites" becomes "Remove from favorites" for a favorite album.
+    override fun adjustItem(item: MenuItem, menu: Menu.ForAlbum) {
+        if (item.itemId != R.id.action_favorite || !Favorites.isFavorite(menu.album)) return
+        item.setTitle(R.string.ws_lbl_favorite_remove)
+        item.setIcon(R.drawable.ic_favorite_24)
+    }
+
     override fun updateMenu(binding: DialogMenuBinding, menu: Menu.ForAlbum) {
         val context = requireContext()
         binding.menuCover.bind(menu.album)
@@ -132,6 +140,12 @@ class AlbumMenuDialogFragment : MenuDialogFragment<Menu.ForAlbum>() {
                 requireContext().showToast(R.string.lng_queue_added)
             }
             R.id.action_artist_details -> detailModel.showArtist(menu.album)
+            R.id.action_favorite ->
+                requireContext()
+                    .showToast(
+                        if (Favorites.toggle(menu.album)) R.string.ws_lng_favorite_added
+                        else R.string.ws_lng_favorite_removed,
+                    )
             R.id.action_playlist_add -> musicModel.addToPlaylist(menu.album)
             R.id.action_share -> requireContext().share(menu.album)
             else -> error("Unexpected menu item selected $item")

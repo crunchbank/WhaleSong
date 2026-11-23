@@ -209,17 +209,6 @@ constructor(
         }
     }
 
-    /** [song]'s path relative to the Music folder, or absolute if it's on other storage. */
-    private fun pathOf(song: Song): String {
-        val path = song.path
-        val parts = path.components.components
-        if (path.volume is Volume.Internal) {
-            return relativePath(listOf(MUSIC_DIR), parts)
-        }
-        val volume = path.volume.components?.components ?: emptyList()
-        return "/" + (volume + parts).joinToString("/")
-    }
-
     private fun collection() = MediaStore.Files.getContentUri("external_primary")
 
     companion object {
@@ -229,6 +218,17 @@ constructor(
         private const val RELATIVE_PATH = "$MUSIC_DIR/"
         private const val MIME_TYPE = "audio/x-mpegurl"
         private const val DEBOUNCE_MS = 2000L
+
+        /** [song]'s path relative to the Music folder, or absolute if it's on other storage. */
+        internal fun pathOf(song: Song): String {
+            val path = song.path
+            val parts = path.components.components
+            if (path.volume is Volume.Internal) {
+                return relativePath(listOf(MUSIC_DIR), parts)
+            }
+            val volume = path.volume.components?.components ?: emptyList()
+            return "/" + (volume + parts).joinToString("/")
+        }
 
         /** The path from directory [base] to [target], both from the same root. */
         internal fun relativePath(base: List<String>, target: List<String>): String {

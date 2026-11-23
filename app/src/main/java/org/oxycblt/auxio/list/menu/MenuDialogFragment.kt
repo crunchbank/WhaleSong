@@ -74,6 +74,9 @@ abstract class MenuDialogFragment<M : Menu> :
      */
     abstract fun onClick(item: MenuItem, menu: M)
 
+    /** WhaleSong: lets an implementation adjust an item (its title or icon) before it is shown. */
+    open fun adjustItem(item: MenuItem, menu: M) {}
+
     override fun onCreateBinding(inflater: LayoutInflater) = DialogMenuBinding.inflate(inflater)
 
     override fun onBindingCreated(binding: DialogMenuBinding, savedInstanceState: Bundle?) {
@@ -123,6 +126,7 @@ abstract class MenuDialogFragment<M : Menu> :
         val visible =
             builder.children.mapTo(mutableListOf()) {
                 it.isEnabled = !disabledIds.contains(it.itemId)
+                adjustItem(it, casted)
                 it
             }
         menuAdapter.update(visible, UpdateInstructions.Diff)

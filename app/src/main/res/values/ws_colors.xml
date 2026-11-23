@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Copyright (c) 2026 crunchbank (WhaleSong). Licensed under the GNU General Public License,
+    version 3 or (at your option) any later version.
+-->
+<resources>
+    <!-- The coral of the app icon's record label. -->
+    <color name="ws_favorite">#F0795A</color>
+</resources>

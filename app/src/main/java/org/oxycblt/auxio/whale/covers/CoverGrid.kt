@@ -184,6 +184,7 @@ class CoverViewHolder private constructor(private val binding: WsItemCoverBindin
         }
         binding.coverName.text = item.name.resolve(binding.context)
         binding.coverInfo.text = info
+        binding.coverFavorite.album = item as? Album
     }
 
     override fun updatePlayingIndicator(isActive: Boolean, isPlaying: Boolean) {

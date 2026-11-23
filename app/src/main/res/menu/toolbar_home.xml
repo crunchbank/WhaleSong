@@ -8,6 +8,13 @@
         android:title="@string/lbl_search"
         app:showAsAction="ifRoom" />
 
+    <!-- WhaleSong: on the Albums tab, switches between all albums and favorites only. -->
+    <item
+        android:id="@+id/action_favorites_only"
+        android:icon="@drawable/ic_favorite_border_24"
+        android:title="@string/ws_lbl_favorites_only"
+        app:showAsAction="always" />
+
     <!-- WhaleSong: switches the current tab between a list and a grid of covers. -->
     <item
         android:id="@+id/action_cover_layout"

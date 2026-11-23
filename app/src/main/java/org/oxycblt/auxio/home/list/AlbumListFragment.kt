@@ -43,6 +43,7 @@ import org.oxycblt.auxio.util.collectImmediately
 import org.oxycblt.auxio.whale.covers.CoverAdapter
 import org.oxycblt.auxio.whale.covers.CoverGrid
 import org.oxycblt.auxio.whale.covers.CoverInfo
+import org.oxycblt.auxio.whale.favorites.Favorites
 import org.oxycblt.musikr.Album
 import org.oxycblt.musikr.Music
 import org.oxycblt.musikr.MusicParent
@@ -172,14 +173,26 @@ class AlbumListFragment :
 
     private fun updateAlbums(albums: List<Album>) {
         albumAdapter.update(albums, homeModel.albumInstructions.consume())
+        updateNoMusicIndicator(homeModel.empty.value, musicModel.indexingState.value)
     }
 
     private fun updateNoMusicIndicator(empty: Boolean, indexingState: IndexingState?) {
         val binding = requireBinding()
-        binding.homeRecycler.isInvisible = empty
-        binding.homeNoMusic.isInvisible = !empty
+        // WhaleSong: with favorites only on and none picked yet, say how to pick one.
+        val noFavorites =
+            !empty && Favorites.onlyFavorites.value && homeModel.albumList.value.isEmpty()
+        binding.homeRecycler.isInvisible = empty || noFavorites
+        binding.homeNoMusic.isInvisible = !empty && !noFavorites
         binding.homeNoMusicAction.isVisible =
-            indexingState == null || (empty && indexingState is IndexingState.Completed)
+            !noFavorites &&
+                (indexingState == null || (empty && indexingState is IndexingState.Completed))
+        binding.homeNoMusicPlaceholder.apply {
+            setImageResource(if (noFavorites) R.drawable.ic_favorite_border_48 else R.drawable.ic_album_48)
+            contentDescription =
+                getString(if (noFavorites) R.string.ws_lbl_favorite else R.string.lbl_albums)
+        }
+        binding.homeNoMusicMsg.text =
+            getString(if (noFavorites) R.string.ws_lng_favorites_empty else R.string.lng_empty_albums)
     }
 
     private fun updateSelection(selection: List<Music>) {

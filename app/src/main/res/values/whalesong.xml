@@ -11,8 +11,8 @@
     <string name="ws_lbl_unplayed">Unplayed</string>
     <string name="ws_lng_unplayed_empty">You have listened to every song.</string>
     <string name="ws_set_key_backup_playlists" translatable="false">ws_auto_backup_playlists</string>
-    <string name="ws_set_backup_playlists">Back up playlists</string>
-    <string name="ws_set_backup_playlists_desc">Keep a copy of each playlist as an .m3u file in the Music folder</string>
+    <string name="ws_set_backup_playlists">Back up playlists and favorites</string>
+    <string name="ws_set_backup_playlists_desc">Keep a copy of each playlist, and of your favorite albums, as .m3u files in the Music folder</string>
     <string name="ws_set_key_streaming_mode" translatable="false">ws_streaming_mode</string>
     <string name="ws_set_key_streaming_target" translatable="false">ws_streaming_mode_target</string>
     <string name="ws_set_streaming_mode">Streaming mode</string>
@@ -56,4 +56,17 @@
     <string name="ws_key_playlist_covers" translatable="false">ws_playlist_covers</string>
     <string name="ws_lbl_show_covers">Show covers</string>
     <string name="ws_lbl_show_list">Show list</string>
+    <!-- Favorite albums -->
+    <item name="ws_heart_tint" type="id" />
+    <string name="ws_key_favorites_only" translatable="false">ws_favorites_only</string>
+    <!-- Set once the favorites backup has been read (or written), so a fresh install never overwrites it unread. -->
+    <string name="ws_key_favorites_backup_checked" translatable="false">ws_favorites_backup_checked</string>
+    <string name="ws_lbl_favorite">Favorite</string>
+    <string name="ws_lbl_favorite_add">Add to favorites</string>
+    <string name="ws_lbl_favorite_remove">Remove from favorites</string>
+    <string name="ws_lbl_favorites_only">Show favorites only</string>
+    <string name="ws_lbl_favorites_all">Show all albums</string>
+    <string name="ws_lng_favorite_added">Added to favorites</string>
+    <string name="ws_lng_favorite_removed">Removed from favorites</string>
+    <string name="ws_lng_favorites_empty">No favorite albums yet. Tap the heart on an album\'s page, or choose Add to favorites from its menu.</string>
 </resources>

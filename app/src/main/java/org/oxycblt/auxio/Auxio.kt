@@ -33,6 +33,8 @@ import org.oxycblt.auxio.image.ImageSettings
 import org.oxycblt.auxio.playback.PlaybackSettings
 import org.oxycblt.auxio.ui.UISettings
 import org.oxycblt.auxio.whale.backup.PlaylistAutoBackup
+import org.oxycblt.auxio.whale.favorites.Favorites
+import org.oxycblt.auxio.whale.favorites.FavoritesBackup
 import org.oxycblt.auxio.whale.loudness.StreamingMode
 import org.oxycblt.auxio.whale.plays.PlayCounts
 import timber.log.Timber
@@ -49,6 +51,7 @@ class Auxio : Application() {
     @Inject lateinit var uiSettings: UISettings
     @Inject lateinit var homeSettings: HomeSettings
     @Inject lateinit var playlistAutoBackup: PlaylistAutoBackup
+    @Inject lateinit var favoritesBackup: FavoritesBackup
 
     override fun onCreate() {
         super.onCreate()
@@ -58,8 +61,10 @@ class Auxio : Application() {
             Timber.plant(Timber.DebugTree())
         }
         PlayCounts.init(this)
+        Favorites.init(this)
         StreamingMode.init(this)
         playlistAutoBackup.start()
+        favoritesBackup.start()
 
         // Migrate any settings that may have changed in an app update.
         imageSettings.migrate()
