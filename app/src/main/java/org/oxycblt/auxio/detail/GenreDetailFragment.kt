@@ -29,6 +29,7 @@ import org.oxycblt.auxio.detail.list.GenreDetailListAdapter
 import org.oxycblt.auxio.list.Item
 import org.oxycblt.auxio.list.ListFragment
 import org.oxycblt.auxio.list.menu.Menu
+import org.oxycblt.auxio.music.MusicType
 import org.oxycblt.auxio.music.PlaylistDecision
 import org.oxycblt.auxio.music.PlaylistMessage
 import org.oxycblt.auxio.music.resolve
@@ -38,6 +39,7 @@ import org.oxycblt.auxio.util.collectImmediately
 import org.oxycblt.auxio.util.getPlural
 import org.oxycblt.auxio.util.navigateSafe
 import org.oxycblt.auxio.util.showToast
+import org.oxycblt.auxio.whale.covers.CoverGrid
 import org.oxycblt.musikr.Artist
 import org.oxycblt.musikr.Genre
 import org.oxycblt.musikr.Music
@@ -63,6 +65,10 @@ class GenreDetailFragment : DetailFragment<Genre, Music>() {
 
     override fun onBindingCreated(binding: FragmentDetailBinding, savedInstanceState: Bundle?) {
         super.onBindingCreated(binding, savedInstanceState)
+        // WhaleSong: the genre's artists follow the Artists tab's list/covers choice.
+        CoverGrid.bindDetail(this, binding.detailRecycler, MusicType.ARTISTS, genreListAdapter) {
+            genreListAdapter.getItem(it) is Artist
+        }
 
         // --- VIEWMODEL SETUP ---
         // DetailViewModel handles most initialization from the navigation argument.

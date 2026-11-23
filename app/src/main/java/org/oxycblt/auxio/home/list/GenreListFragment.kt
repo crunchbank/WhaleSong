@@ -20,7 +20,6 @@ package org.oxycblt.auxio.home.list
 
 import android.os.Bundle
 import android.view.LayoutInflater
-import android.view.ViewGroup
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.fragment.app.activityViewModels
@@ -31,16 +30,18 @@ import org.oxycblt.auxio.detail.DetailViewModel
 import org.oxycblt.auxio.home.HomeViewModel
 import org.oxycblt.auxio.list.ListFragment
 import org.oxycblt.auxio.list.ListViewModel
-import org.oxycblt.auxio.list.SelectableListListener
-import org.oxycblt.auxio.list.adapter.SelectionIndicatorAdapter
 import org.oxycblt.auxio.list.recycler.FastScrollRecyclerView
 import org.oxycblt.auxio.list.recycler.GenreViewHolder
 import org.oxycblt.auxio.list.sort.Sort
 import org.oxycblt.auxio.music.IndexingState
+import org.oxycblt.auxio.music.MusicType
 import org.oxycblt.auxio.music.MusicViewModel
 import org.oxycblt.auxio.playback.PlaybackViewModel
 import org.oxycblt.auxio.playback.formatDurationMsPopup
 import org.oxycblt.auxio.util.collectImmediately
+import org.oxycblt.auxio.whale.covers.CoverAdapter
+import org.oxycblt.auxio.whale.covers.CoverGrid
+import org.oxycblt.auxio.whale.covers.CoverInfo
 import org.oxycblt.musikr.Genre
 import org.oxycblt.musikr.Music
 import org.oxycblt.musikr.MusicParent
@@ -61,7 +62,16 @@ class GenreListFragment :
     override val listModel: ListViewModel by activityViewModels()
     override val musicModel: MusicViewModel by activityViewModels()
     override val playbackModel: PlaybackViewModel by activityViewModels()
-    private val genreAdapter = GenreAdapter(this)
+    // WhaleSong: Auxio's list rows, or a grid of covers.
+    private val genreAdapter =
+        CoverAdapter<Genre>(
+            this,
+            GenreViewHolder.DIFF_CALLBACK,
+            GenreViewHolder.VIEW_TYPE,
+            GenreViewHolder::from,
+            { holder, item -> (holder as GenreViewHolder).bind(item, this) },
+            CoverInfo::genre,
+        )
 
     override fun onCreateBinding(inflater: LayoutInflater) =
         FragmentHomeListBinding.inflate(inflater)
@@ -75,6 +85,7 @@ class GenreListFragment :
             popupProvider = this@GenreListFragment
             listener = this@GenreListFragment
         }
+        CoverGrid.bindHome(this, binding.homeRecycler, MusicType.GENRES, genreAdapter)
 
         binding.homeNoMusicPlaceholder.apply {
             setImageResource(R.drawable.ic_genre_48)
@@ -160,20 +171,5 @@ class GenreListFragment :
         // playing song is also contained within.
         val genre = (parent as? Genre)?.takeIf { song?.run { genres.contains(it) } ?: false }
         genreAdapter.setPlaying(genre, isPlaying)
-    }
-
-    /**
-     * A [SelectionIndicatorAdapter] that shows a list of [Genre]s using [GenreViewHolder].
-     *
-     * @param listener An [SelectableListListener] to bind interactions to.
-     */
-    private class GenreAdapter(private val listener: SelectableListListener<Genre>) :
-        SelectionIndicatorAdapter<Genre, GenreViewHolder>(GenreViewHolder.DIFF_CALLBACK) {
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
-            GenreViewHolder.from(parent)
-
-        override fun onBindViewHolder(holder: GenreViewHolder, position: Int) {
-            holder.bind(getItem(position), listener)
-        }
     }
 }

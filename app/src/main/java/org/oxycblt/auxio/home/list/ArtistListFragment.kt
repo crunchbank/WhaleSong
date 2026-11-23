@@ -20,7 +20,6 @@ package org.oxycblt.auxio.home.list
 
 import android.os.Bundle
 import android.view.LayoutInflater
-import android.view.ViewGroup
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.fragment.app.activityViewModels
@@ -31,17 +30,19 @@ import org.oxycblt.auxio.detail.DetailViewModel
 import org.oxycblt.auxio.home.HomeViewModel
 import org.oxycblt.auxio.list.ListFragment
 import org.oxycblt.auxio.list.ListViewModel
-import org.oxycblt.auxio.list.SelectableListListener
-import org.oxycblt.auxio.list.adapter.SelectionIndicatorAdapter
 import org.oxycblt.auxio.list.recycler.ArtistViewHolder
 import org.oxycblt.auxio.list.recycler.FastScrollRecyclerView
 import org.oxycblt.auxio.list.sort.Sort
 import org.oxycblt.auxio.music.IndexingState
+import org.oxycblt.auxio.music.MusicType
 import org.oxycblt.auxio.music.MusicViewModel
 import org.oxycblt.auxio.playback.PlaybackViewModel
 import org.oxycblt.auxio.playback.formatDurationMsPopup
 import org.oxycblt.auxio.util.collectImmediately
 import org.oxycblt.auxio.util.positiveOrNull
+import org.oxycblt.auxio.whale.covers.CoverAdapter
+import org.oxycblt.auxio.whale.covers.CoverGrid
+import org.oxycblt.auxio.whale.covers.CoverInfo
 import org.oxycblt.musikr.Artist
 import org.oxycblt.musikr.Music
 import org.oxycblt.musikr.MusicParent
@@ -62,7 +63,16 @@ class ArtistListFragment :
     override val listModel: ListViewModel by activityViewModels()
     override val musicModel: MusicViewModel by activityViewModels()
     override val playbackModel: PlaybackViewModel by activityViewModels()
-    private val artistAdapter = ArtistAdapter(this)
+    // WhaleSong: Auxio's list rows, or a grid of covers.
+    private val artistAdapter =
+        CoverAdapter<Artist>(
+            this,
+            ArtistViewHolder.DIFF_CALLBACK,
+            ArtistViewHolder.VIEW_TYPE,
+            ArtistViewHolder::from,
+            { holder, item -> (holder as ArtistViewHolder).bind(item, this) },
+            CoverInfo::artist,
+        )
 
     override fun onCreateBinding(inflater: LayoutInflater) =
         FragmentHomeListBinding.inflate(inflater)
@@ -76,6 +86,7 @@ class ArtistListFragment :
             popupProvider = this@ArtistListFragment
             listener = this@ArtistListFragment
         }
+        CoverGrid.bindHome(this, binding.homeRecycler, MusicType.ARTISTS, artistAdapter)
 
         binding.homeNoMusicPlaceholder.apply {
             setImageResource(R.drawable.ic_artist_48)
@@ -163,21 +174,5 @@ class ArtistListFragment :
         // playing song is also contained within.
         val artist = (parent as? Artist)?.takeIf { song?.run { artists.contains(it) } ?: false }
         artistAdapter.setPlaying(artist, isPlaying)
-    }
-
-    /**
-     * A [SelectionIndicatorAdapter] that shows a list of [Artist]s using [ArtistViewHolder].
-     *
-     * @param listener An [SelectableListListener] to bind interactions to.
-     */
-    private class ArtistAdapter(private val listener: SelectableListListener<Artist>) :
-        SelectionIndicatorAdapter<Artist, ArtistViewHolder>(ArtistViewHolder.DIFF_CALLBACK) {
-
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
-            ArtistViewHolder.from(parent)
-
-        override fun onBindViewHolder(holder: ArtistViewHolder, position: Int) {
-            holder.bind(getItem(position), listener)
-        }
     }
 }

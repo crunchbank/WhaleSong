@@ -69,7 +69,7 @@ import org.oxycblt.auxio.util.collectImmediately
 import org.oxycblt.auxio.util.dampen
 import org.oxycblt.auxio.util.navigateSafe
 import org.oxycblt.auxio.util.showToast
-import org.oxycblt.auxio.whale.covers.AlbumCovers
+import org.oxycblt.auxio.whale.covers.CoverGrid
 import org.oxycblt.musikr.IndexingProgress
 import org.oxycblt.musikr.Music
 import org.oxycblt.musikr.Playlist
@@ -171,7 +171,9 @@ class HomeFragment : SelectionFragment<FragmentHomeBinding>() {
         collect(homeModel.recreateTabs.flow, ::handleRecreate)
         collect(homeModel.chooseMusicLocations.flow, ::handleChooseFolders)
         collectImmediately(homeModel.currentTabType, ::updateCurrentTab)
-        collectImmediately(AlbumCovers.load(requireContext()), ::updateAlbumLayoutButton)
+        for (type in MusicType.entries.filter(CoverGrid::supports)) {
+            collectImmediately(CoverGrid.state(requireContext(), type)) { updateCoverButton() }
+        }
         collect(detailModel.toShow.flow, ::handleShow)
         collect(listModel.menu.flow, ::handleMenu)
         collectImmediately(listModel.selected, ::updateSelection)
@@ -199,8 +201,8 @@ class HomeFragment : SelectionFragment<FragmentHomeBinding>() {
                 findNavController().navigateSafe(HomeFragmentDirections.search())
                 true
             }
-            R.id.action_album_layout -> {
-                AlbumCovers.toggle(requireContext())
+            R.id.action_cover_layout -> {
+                CoverGrid.toggle(requireContext(), homeModel.currentTabType.value)
                 true
             }
             R.id.action_unplayed -> {
@@ -270,9 +272,7 @@ class HomeFragment : SelectionFragment<FragmentHomeBinding>() {
 
     private fun updateCurrentTab(tabType: MusicType) {
         val binding = requireBinding()
-        // WhaleSong: the list/covers switch belongs to the Albums tab alone.
-        binding.homeNormalToolbar.getMenuButton(R.id.action_album_layout)?.isVisible =
-            tabType == MusicType.ALBUMS
+        updateCoverButton()
 
         // Update the scrolling view in AppBarLayout to align with the current tab's
         // scrolling state. This prevents the lift state from being confused as one
@@ -287,11 +287,17 @@ class HomeFragment : SelectionFragment<FragmentHomeBinding>() {
             }
     }
 
-    /** WhaleSong: the button offers whichever layout isn't showing. */
-    private fun updateAlbumLayoutButton(grid: Boolean?) {
+    /**
+     * WhaleSong: the list/covers switch, on every tab that has covers, offers whichever layout the
+     * current tab isn't showing.
+     */
+    private fun updateCoverButton() {
         val button =
-            requireBinding().homeNormalToolbar.getMenuButton(R.id.action_album_layout) ?: return
-        val covers = grid ?: true
+            requireBinding().homeNormalToolbar.getMenuButton(R.id.action_cover_layout) ?: return
+        val type = homeModel.currentTabType.value
+        button.isVisible = CoverGrid.supports(type)
+        if (!button.isVisible) return
+        val covers = CoverGrid.state(requireContext(), type).value
         // Loaded with this fragment's theme, as the menu's own icons are.
         button.icon =
             ContextCompat.getDrawable(

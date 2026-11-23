@@ -18,12 +18,16 @@
  
 package org.oxycblt.auxio.detail.list
 
+import android.annotation.SuppressLint
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import org.oxycblt.auxio.list.Item
 import org.oxycblt.auxio.list.adapter.SimpleDiffCallback
 import org.oxycblt.auxio.list.recycler.ArtistViewHolder
 import org.oxycblt.auxio.list.recycler.SongViewHolder
+import org.oxycblt.auxio.whale.covers.CoverInfo
+import org.oxycblt.auxio.whale.covers.CoverViewHolder
+import org.oxycblt.auxio.whale.covers.Coverable
 import org.oxycblt.musikr.Artist
 import org.oxycblt.musikr.Genre
 import org.oxycblt.musikr.Music
@@ -36,11 +40,20 @@ import org.oxycblt.musikr.Song
  * @author Alexander Capehart (OxygenCobalt)
  */
 class GenreDetailListAdapter(private val listener: Listener<Music>) :
-    DetailListAdapter(listener, DIFF_CALLBACK) {
+    DetailListAdapter(listener, DIFF_CALLBACK), Coverable {
+    // WhaleSong: the artists as cover tiles, following the Artists tab.
+    override var covers = false
+        @SuppressLint("NotifyDataSetChanged")
+        set(value) {
+            if (field == value) return
+            field = value
+            notifyDataSetChanged()
+        }
+
     override fun getItemViewType(position: Int) =
         when (getItem(position)) {
             // Support generic Artist/Song items.
-            is Artist -> ArtistViewHolder.VIEW_TYPE
+            is Artist -> if (covers) CoverViewHolder.VIEW_TYPE else ArtistViewHolder.VIEW_TYPE
             is Song -> SongViewHolder.VIEW_TYPE
             else -> super.getItemViewType(position)
         }
@@ -48,6 +61,7 @@ class GenreDetailListAdapter(private val listener: Listener<Music>) :
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
         when (viewType) {
             ArtistViewHolder.VIEW_TYPE -> ArtistViewHolder.from(parent)
+            CoverViewHolder.VIEW_TYPE -> CoverViewHolder.from(parent)
             SongViewHolder.VIEW_TYPE -> SongViewHolder.from(parent)
             else -> super.onCreateViewHolder(parent, viewType)
         }
@@ -55,7 +69,12 @@ class GenreDetailListAdapter(private val listener: Listener<Music>) :
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         super.onBindViewHolder(holder, position)
         when (val item = getItem(position)) {
-            is Artist -> (holder as ArtistViewHolder).bind(item, listener)
+            is Artist ->
+                if (holder is CoverViewHolder) {
+                    holder.bind(item, listener, CoverInfo.artist(holder.itemView.context, item))
+                } else {
+                    (holder as ArtistViewHolder).bind(item, listener)
+                }
             is Song -> (holder as SongViewHolder).bind(item, listener)
         }
     }

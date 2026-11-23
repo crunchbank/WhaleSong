@@ -18,6 +18,7 @@
  
 package org.oxycblt.auxio.detail.list
 
+import android.annotation.SuppressLint
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import org.oxycblt.auxio.IntegerTable
@@ -31,6 +32,9 @@ import org.oxycblt.auxio.list.adapter.SimpleDiffCallback
 import org.oxycblt.auxio.music.resolve
 import org.oxycblt.auxio.util.context
 import org.oxycblt.auxio.util.inflater
+import org.oxycblt.auxio.whale.covers.CoverInfo
+import org.oxycblt.auxio.whale.covers.CoverViewHolder
+import org.oxycblt.auxio.whale.covers.Coverable
 import org.oxycblt.musikr.Album
 import org.oxycblt.musikr.Artist
 import org.oxycblt.musikr.Music
@@ -43,11 +47,20 @@ import org.oxycblt.musikr.Song
  * @author Alexander Capehart (OxygenCobalt)
  */
 class ArtistDetailListAdapter(private val listener: Listener<Music>) :
-    DetailListAdapter(listener, DIFF_CALLBACK) {
+    DetailListAdapter(listener, DIFF_CALLBACK), Coverable {
+    // WhaleSong: the albums as cover tiles, following the Albums tab.
+    override var covers = false
+        @SuppressLint("NotifyDataSetChanged")
+        set(value) {
+            if (field == value) return
+            field = value
+            notifyDataSetChanged()
+        }
+
     override fun getItemViewType(position: Int) =
         when (getItem(position)) {
             // Support a special artist albums/songs.
-            is Album -> ArtistAlbumViewHolder.VIEW_TYPE
+            is Album -> if (covers) CoverViewHolder.VIEW_TYPE else ArtistAlbumViewHolder.VIEW_TYPE
             is Song -> ArtistSongViewHolder.VIEW_TYPE
             else -> super.getItemViewType(position)
         }
@@ -55,6 +68,7 @@ class ArtistDetailListAdapter(private val listener: Listener<Music>) :
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
         when (viewType) {
             ArtistAlbumViewHolder.VIEW_TYPE -> ArtistAlbumViewHolder.from(parent)
+            CoverViewHolder.VIEW_TYPE -> CoverViewHolder.from(parent)
             ArtistSongViewHolder.VIEW_TYPE -> ArtistSongViewHolder.from(parent)
             else -> super.onCreateViewHolder(parent, viewType)
         }
@@ -63,7 +77,12 @@ class ArtistDetailListAdapter(private val listener: Listener<Music>) :
         super.onBindViewHolder(holder, position)
         // Re-binding an item with new data and not just a changed selection/playing state.
         when (val item = getItem(position)) {
-            is Album -> (holder as ArtistAlbumViewHolder).bind(item, listener)
+            is Album ->
+                if (holder is CoverViewHolder) {
+                    holder.bind(item, listener, CoverInfo.albumDate(holder.itemView.context, item))
+                } else {
+                    (holder as ArtistAlbumViewHolder).bind(item, listener)
+                }
             is Song -> (holder as ArtistSongViewHolder).bind(item, listener)
         }
     }

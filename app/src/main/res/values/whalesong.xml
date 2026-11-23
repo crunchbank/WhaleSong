@@ -49,8 +49,11 @@
     <string name="ws_lng_whale_button_off">Whale sighting button off</string>
     <string name="ws_lng_whale_queued">Another whale is on its way</string>
     <string name="ws_lng_whale_waiting">A whale will come once a little more of the song has played</string>
-    <!-- Album covers grid -->
+    <!-- Cover grids on the library tabs -->
     <string name="ws_key_album_covers" translatable="false">ws_album_covers</string>
-    <string name="ws_lbl_show_covers">Show album covers</string>
-    <string name="ws_lbl_show_list">Show album list</string>
+    <string name="ws_key_artist_covers" translatable="false">ws_artist_covers</string>
+    <string name="ws_key_genre_covers" translatable="false">ws_genre_covers</string>
+    <string name="ws_key_playlist_covers" translatable="false">ws_playlist_covers</string>
+    <string name="ws_lbl_show_covers">Show covers</string>
+    <string name="ws_lbl_show_list">Show list</string>
 </resources>
