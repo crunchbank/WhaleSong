@@ -1,0 +1,192 @@
+<!doctype html>
+<!--
+  Copyright (c) 2026 crunchbank (WhaleSong). Licensed under the GNU General Public License,
+  version 3 or (at your option) any later version.
+  Mockup: a whale graphic in place of the "WhaleSong" title on the home toolbar.
+  Shapes are the sightings' humpback (whale/sightings/Humpback.kt) and the app icon's fluke.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Whale Header</title>
+<style>
+:root{--wTop:#2e7bd6;--wBot:#0d47a1;--wFlip:#164f9e;--wBelly:#dfe8f6;--wPleat:#0d3a80;--wNote:#f07c5c;--bg:#f4f5f8;--fg:#1b1c20;--mute:#5d606a;--card:#fff;--line:#dfe1e8;
+  --surf:#f8f7fc;--on:#1b1b21;--onv:#46464f;--acc:#4a5c92;--tile:#ebeaf2}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--wTop:#7cb6f6;--wBot:#3a7fdc;--wFlip:#4b8ae0;--wPleat:#235cb4;--wNote:#ff9473;--bg:#0c0d10;--fg:#e4e5ea;--mute:#9a9ca6;--card:#17181c;--line:#2a2c33;
+  --surf:#0f1014;--on:#e4e1e9;--onv:#c6c5d0;--acc:#b4c4ff;--tile:#1d1e24}}
+:root[data-theme="dark"]{--wTop:#7cb6f6;--wBot:#3a7fdc;--wFlip:#4b8ae0;--wPleat:#235cb4;--wNote:#ff9473;--bg:#0c0d10;--fg:#e4e5ea;--mute:#9a9ca6;--card:#17181c;--line:#2a2c33;
+  --surf:#0f1014;--on:#e4e1e9;--onv:#c6c5d0;--acc:#b4c4ff;--tile:#1d1e24}
+body{background:var(--bg);color:var(--fg);font:15px/1.45 -apple-system,system-ui,sans-serif;margin:0;padding:24px 16px}
+main{max-width:900px;margin:auto}h1{font-size:22px;margin:0 0 4px}
+p{color:var(--mute);margin:4px 0 14px}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+button,label.ck{font:inherit;font-size:14px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
+.opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:16px}
+.opt h2{font-size:16px;margin:0 0 2px}.opt p{font-size:13px;margin:0 0 8px}
+.phone{background:var(--surf);border-radius:18px;overflow:hidden;border:1px solid var(--line);max-width:412px}
+.tb{height:64px;display:flex;align-items:center;padding:0 4px 0 12px}
+.tb .logo{flex:1;display:flex;align-items:center;height:64px}
+.tb .logo svg{overflow:visible}
+.ic{width:48px;height:48px;display:flex;align-items:center;justify-content:center}
+.ic svg{width:24px;height:24px;fill:var(--onv)}
+.tabs{display:flex;gap:26px;padding:0 16px;font-weight:600;font-size:15px;color:var(--onv);border-bottom:1px solid var(--line)}
+.tabs span{padding:12px 0}.tabs .on{color:var(--acc);box-shadow:inset 0 -3px 0 var(--acc)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px}
+.grid div{aspect-ratio:1;border-radius:16px;background:var(--tile)}
+.ink{fill:var(--on)}.knock{fill:none;stroke:var(--surf);stroke-linecap:round}
+.wave{fill:none;stroke:var(--on);stroke-linecap:round}
+.blue{fill:url(#bodyGrad)}.belly{fill:var(--wBelly)}
+.anim .bob{animation:bob 6s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(1.2px)}}
+.anim .puff{animation:puff 9s ease-out infinite;transform-box:fill-box;transform-origin:50% 100%}
+@keyframes puff{0%,62%{opacity:0;transform:scale(.4) translateY(4px)}70%{opacity:1;transform:scale(1)}88%{opacity:.9}100%{opacity:0;transform:scale(1.15) translateY(-3px)}}
+.anim .note{animation:note 7s ease-in-out infinite;transform-box:fill-box}
+.anim .note.n2{animation-delay:.7s}.anim .note.n3{animation-delay:1.4s}
+@keyframes note{0%,55%{opacity:0;transform:translate(0,3px)}65%{opacity:1}90%{opacity:1;transform:translate(3px,-4px)}100%{opacity:0;transform:translate(4px,-6px)}}
+.anim .rise{animation:rise 10s ease-in-out infinite}
+@keyframes rise{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.5px)}}
+</style>
+</head>
+<body>
+<main>
+<h1>Whale header</h1>
+<p>Five ideas for the graphic that replaces "WhaleSong" at the top left of the home screen, shown at real size beside the toolbar buttons. Pick one, or mix: e.g. the shape of one in the colour of another.</p>
+<div class="bar">
+  <button id="theme">Switch to dark</button>
+  <label class="ck"><input type="checkbox" id="anim" checked> Subtle animation</label>
+</div>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="bodyGrad" x1="0" y1="-8" x2="0" y2="8" gradientUnits="userSpaceOnUse">
+      <stop offset="0" style="stop-color:var(--wTop)"/><stop offset="1" style="stop-color:var(--wBot)"/>
+    </linearGradient>
+    <path id="body" d="M25.2,0.5 Q25.2,-0.9 23.6,-1.4 Q22.9,-1.6 22.2,-1.8 Q21.23,-1.62 20.45,-2.23 Q19.48,-2.05 18.7,-2.65 Q17.73,-2.47 16.95,-3.08 Q15.98,-2.9 15.2,-3.5 Q13.6,-4.7 11.6,-4.6 C6,-5.6 -1,-6.4 -6,-6.3 Q-8.6,-6.3 -10,-7.0 Q-11.2,-8.4 -12.4,-8.3 Q-12.7,-7.4 -13.8,-6.4 Q-14.38,-5.88 -15.14,-5.76 Q-15.72,-5.24 -16.48,-5.12 Q-17.06,-4.6 -17.82,-4.48 Q-18.4,-3.96 -19.16,-3.84 Q-19.74,-3.32 -20.5,-3.2 C-22.2,-2.4 -23.6,-1.5 -25,-1.0 C-28.5,-1.3 -32,-0.9 -35.2,0.9 Q-31.5,1.3 -25,0.9 C-18,2.0 -12,3.6 -6,5.0 C0,6.7 6.5,7.0 10.5,6.0 C15,4.9 20.5,3.2 23.6,2.2 Q25.6,1.6 25.2,0.5 Z"/>
+    <path id="flipper" d="M13.6,2.6 C11,5.6 6.5,9.2 0.8,11.6 Q-0.42,11.58 -1.33,12.4 Q-2.56,12.38 -3.47,13.2 Q-4.69,13.18 -5.6,14 Q-6.6,14.3 -5.6,13.0 C-2,10.2 2.5,7.6 8.2,4.2 Z"/>
+    <path id="fluke" d="M50.06,72.5 C49.94,73 51.22,62.5 51.56,56.2 C47.5,53.6 40.31,50.9 35.67,46.6 C31.73,42.9 29.64,37.6 29.52,30.2 Q31.96,33.6 34.98,35 Q36.54,35.02 37.57,36.03 Q39.13,36.05 40.16,37.07 Q41.72,37.08 42.75,38.1 Q44.31,38.12 45.34,39.13 Q46.9,39.15 47.93,40.17 Q49.49,40.18 50.52,41.2 C52.14,41.9 53.3,43 54,44.2 C54.7,43 55.86,41.9 57.48,41.2 Q58.51,40.18 60.07,40.17 Q61.1,39.15 62.66,39.13 Q63.69,38.12 65.25,38.1 Q66.28,37.08 67.84,37.07 Q68.87,36.05 70.43,36.03 Q71.46,35.02 73.02,35 Q76.04,33.6 78.48,30.2 C78.36,37.6 76.27,42.9 72.33,46.6 C67.69,50.9 60.5,53.6 56.44,56.2 C56.78,62.5 58.06,73 57.94,72.5 Z"/>
+    <g id="note"><ellipse cx="0" cy="0" rx="1.75" ry="1.25" transform="rotate(-22)"/>
+      <rect x="1.05" y="-7.2" width=".7" height="7"/>
+      <path d="M1.05,-7.2 h.7 C2,-5.4 4.4,-5.2 3.6,-2.2 C3.5,-3.8 2.6,-4.6 1.75,-4.9 Z"/></g>
+    <g id="details">
+      <path class="knock" stroke-width=".55" d="M25.1,0.9 Q19,1.4 12.8,2.6"/>
+      <path class="knock" stroke-width=".45" d="M22.4,2.2 Q11,6.4 -4,5.0 M20.6,3.0 Q10,6.8 -1.5,5.7 M18.6,3.8 Q9,7.1 1.5,6.3"/>
+      <circle cx="13.6" cy="1.3" r=".6" style="fill:var(--surf)"/>
+    </g>
+  </defs>
+</svg>
+
+<div class="opts" id="opts"></div>
+</main>
+
+<template id="phone">
+  <div class="phone">
+    <div class="tb">
+      <div class="logo"></div>
+      <div class="ic"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></div>
+      <div class="ic"><svg viewBox="0 0 24 24"><path d="M4,6h2v2h-2z M8,6h12v2h-12z M4,11h2v2h-2z M8,11h12v2h-12z M4,16h2v2h-2z M8,16h12v2h-12z"/></svg></div>
+      <div class="ic"><svg viewBox="0 0 24 24"><path d="M3,18V16H9V18ZM3,13V11H15V13ZM3,8V6H21V8Z"/></svg></div>
+      <div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></div>
+    </div>
+    <div class="tabs"><span>Songs</span><span class="on">Albums</span><span>Artists</span><span>Genres</span></div>
+    <div class="grid"><div></div><div></div></div>
+  </div>
+</template>
+
+<script>
+const LOGOS = [
+  {name:"A · Humpback", note:"The sightings' humpback in one colour, matching the text it replaces, with a small blow now and then.",
+   svg:`<svg viewBox="-37 -15 64 30" style="width:137px;height:64px">
+     <g class="bob"><use href="#flipper" class="ink"/><use href="#body" class="ink"/><use href="#details"/></g>
+     <g transform="translate(21.4,-3.4)"><g class="puff" style="fill:none;stroke:var(--on);stroke-linecap:round">
+       <path stroke-width="1.1" d="M0,0 Q-1.2,-3.6 -4.2,-6.4 M0,0 Q1.2,-3.6 4.2,-6.4"/>
+       <path stroke-width=".9" d="M0,-.5 Q-.4,-3.8 -1.6,-7.2 M0,-.5 Q.4,-3.8 1.6,-7.2"/>
+       <circle cx="-5.2" cy="-7.6" r=".55" style="fill:var(--on);stroke:none"/><circle cx="5.2" cy="-7.6" r=".55" style="fill:var(--on);stroke:none"/>
+       <circle cx="-2.3" cy="-8.6" r=".5" style="fill:var(--on);stroke:none"/><circle cx="2.3" cy="-8.6" r=".5" style="fill:var(--on);stroke:none"/></g></g>
+   </svg>`},
+  {name:"B · Whale song", note:"Chosen: in the app (whale/header/SingingWhale.kt). The same humpback singing: notes drift up from its head. The pun in the name.",
+   svg:`<svg viewBox="-37 -17 72 32" style="width:144px;height:64px">
+     <g class="bob"><use href="#flipper" class="ink"/><use href="#body" class="ink"/><use href="#details"/></g>
+     <g transform="translate(24,-4) scale(.8)"><g class="note n1"><use href="#note" class="ink"/></g></g>
+     <g transform="translate(28.5,-8.5) scale(.66)"><g class="note n2"><use href="#note" class="ink"/></g></g>
+     <g transform="translate(32,-12.5) scale(.52)"><g class="note n3"><use href="#note" class="ink"/></g></g>
+   </svg>`},
+  {name:"C · Ocean blue", note:"(Tried, not used.) The whale blows the note out of its blowhole; it drifts up, hangs a moment, then pops. Here it repeats every 6 s; in the app it would play shortly after opening and then now and then.",
+   svg:`<svg viewBox="-37 -15 66 30" style="width:141px;height:64px">
+     <g><use href="#flipper" style="fill:var(--wFlip)"/><use href="#body" class="blue"/>
+       <path fill="none" style="stroke:var(--wPleat)" stroke-width=".45" stroke-linecap="round" d="M22.4,2.2 Q11,6.4 -4,5.0 M20.6,3.0 Q10,6.8 -1.5,5.7"/>
+       <circle cx="13.6" cy="1.3" r=".6" fill="#fff"/></g>
+     <g class="cPuff" style="fill:none;stroke:var(--wTop);stroke-linecap:round" opacity="0">
+       <path stroke-width=".7" d="M0,0 Q-.8,-2.2 -2.6,-3.8 M0,0 Q.8,-2.2 2.6,-3.8 M0,0 Q0,-2.4 0,-4.4"/></g>
+     <g class="cNote" opacity="0"><use href="#note" style="fill:var(--wNote)"/></g>
+     <g class="cPop" style="fill:var(--wNote)" opacity="0">${[0,1,2,3,4,5].map(i=>`<circle r=".45" data-a="${i*60+15}"/>`).join('')}</g>
+   </svg>`},
+  {name:"D · Fluke", note:"The app icon's fluke rising out of a wave line: the icon, simplified to one colour.",
+   svg:`<svg viewBox="22 27 64 50" style="width:82px;height:64px">
+     <g class="rise"><use href="#fluke" class="ink"/></g>
+     <path class="wave" stroke-width="3.4" d="M24,70 Q28.5,67.4 33,70 Q37.5,72.6 42,70 Q46.5,67.4 51,70 Q55.5,72.6 60,70 Q64.5,67.4 69,70 Q73.5,72.6 78,70 Q82.5,67.4 87,70"/>
+   </svg>`},
+  {name:"E · Breach", note:"A humpback mid-leap over a single wave: more action, still one colour.",
+   svg:`<svg viewBox="-38 -27 70 41" style="width:109px;height:64px">
+     <g transform="translate(-2,-6) rotate(-32)"><g class="bob"><use href="#flipper" class="ink"/><use href="#body" class="ink"/><use href="#details"/></g></g>
+     <path class="wave" stroke-width="2.2" d="M-38,10 Q-33,7.5 -28,10 Q-23,12.5 -18,10 Q-13,7.5 -8,10 Q-3,12.5 2,10 Q7,7.5 12,10 Q17,12.5 22,10 Q27,7.5 32,10"/>
+   </svg>`},
+];
+const opts = document.getElementById('opts'), tpl = document.getElementById('phone');
+for (const l of LOGOS) {
+  const d = document.createElement('div'); d.className = 'opt';
+  d.innerHTML = `<h2>${l.name}</h2><p>${l.note}</p>`;
+  const ph = tpl.content.cloneNode(true);
+  ph.querySelector('.logo').innerHTML = l.svg;
+  d.appendChild(ph); opts.appendChild(d);
+}
+const root = document.documentElement, tbtn = document.getElementById('theme');
+function dark(){ return root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; }
+function label(){ tbtn.textContent = dark() ? 'Switch to light' : 'Switch to dark'; }
+tbtn.onclick = () => { root.dataset.theme = dark() ? 'light' : 'dark'; label(); };
+label();
+const anim = document.getElementById('anim');
+const setAnim = () => document.body.classList.toggle('anim', anim.checked);
+anim.onchange = setAnim; setAnim();
+
+// C: the whale blows a note, which drifts up and pops. Times in seconds within a 6 s loop.
+const HOLE = [14.4, -4.4], PEAK = [23.5, -6.6], PERIOD = 6;
+const ease = v => { v = Math.min(1, Math.max(0, v)); return v * v * (3 - 2 * v); };
+const smoother = v => { v = Math.min(1, Math.max(0, v)); return v * v * v * (v * (v * 6 - 15) + 10); };
+function singFrame(now) {
+  const on = document.body.classList.contains('anim');
+  const t = window.freezeAt ?? (on ? (now / 1000) % PERIOD : 2.0);   // still frame: the note hanging
+  for (const svg of document.querySelectorAll('svg')) {
+    const note = svg.querySelector('.cNote'); if (!note) continue;
+    const puff = svg.querySelector('.cPuff'), pop = svg.querySelector('.cPop');
+    // Blow: the spray rises over 0.35 s and fades by 0.9 s.
+    const pr = ease(t / 0.35), pf = 1 - ease((t - 0.45) / 0.45);
+    puff.setAttribute('opacity', t < 0.9 ? Math.min(pr, pf) : 0);
+    puff.setAttribute('transform', `translate(${HOLE[0]},${HOLE[1]}) scale(${0.5 + 0.6 * pr})`);
+    // Note: out of the blowhole at 0.1 s, up to the peak by 1.6 s, swaying; hangs till 2.6 s.
+    const k = smoother((t - 0.1) / 1.5);
+    const x = HOLE[0] + (PEAK[0] - HOLE[0]) * k;
+    const y = HOLE[1] + (PEAK[1] - HOLE[1]) * Math.sin(k * Math.PI / 2) + 0.35 * Math.sin(t * 3.2) * k;
+    const sway = 10 * Math.sin(t * 2.6) * (0.4 + 0.6 * k);
+    let sc = 0.25 + 0.75 * ease((t - 0.1) / 0.6), alpha = t < 0.1 ? 0 : 1;
+    // Pop at 2.6 s: a quick swell as it bursts.
+    const POP = 2.6;
+    if (t > POP) { const q = (t - POP) / 0.14; sc *= 1 + 0.35 * Math.min(1, q); alpha = 1 - Math.min(1, q); }
+    note.setAttribute('opacity', alpha);
+    note.setAttribute('transform', `translate(${x},${y}) rotate(${sway}) scale(${sc})`);
+    // Sparks: six dots fly out from the note's head and fade.
+    const d = (t - POP) / 0.5;
+    pop.setAttribute('opacity', d > 0 && d < 1 ? 1 - ease(d) : 0);
+    const cx = x + 0.4, cy = y - 2.6;
+    for (const c of pop.children) {
+      const a = c.dataset.a * Math.PI / 180, r = 1.5 + 3.2 * ease(d);
+      c.setAttribute('cx', cx + r * Math.cos(a)); c.setAttribute('cy', cy + r * Math.sin(a));
+      c.setAttribute('r', 0.5 * (1 - 0.5 * Math.max(0, d)));
+    }
+  }
+  requestAnimationFrame(singFrame);
+}
+requestAnimationFrame(singFrame);
+</script>
+</body>
+</html>

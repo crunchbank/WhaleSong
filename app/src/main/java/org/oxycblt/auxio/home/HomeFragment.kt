@@ -24,6 +24,7 @@ import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MenuItem
+import android.widget.LinearLayout
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.TooltipCompat
@@ -70,6 +71,7 @@ import org.oxycblt.auxio.util.dampen
 import org.oxycblt.auxio.util.navigateSafe
 import org.oxycblt.auxio.util.showToast
 import org.oxycblt.auxio.whale.covers.CoverGrid
+import org.oxycblt.auxio.whale.header.SingingWhale
 import org.oxycblt.musikr.IndexingProgress
 import org.oxycblt.musikr.Music
 import org.oxycblt.musikr.Playlist
@@ -136,6 +138,17 @@ class HomeFragment : SelectionFragment<FragmentHomeBinding>() {
             setOnMenuItemClickListener(this@HomeFragment)
             MenuCompat.setGroupDividerEnabled(menu, true)
         }
+        // WhaleSong: a singing humpback in place of the app's name.
+        binding.homeNormalToolbar.title = null
+        (binding.homeNormalToolbar.titleContainer as LinearLayout).addView(
+            SingingWhale(requireContext()).apply {
+                contentDescription = getString(R.string.info_app_name)
+            },
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ),
+        )
 
         binding.homePager.apply {
             // Update HomeViewModel whenever the user swipes through the ViewPager.
