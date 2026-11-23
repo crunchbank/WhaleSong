@@ -19,7 +19,6 @@
 
 package org.oxycblt.auxio.whale.header
 
-import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas
@@ -29,7 +28,6 @@ import android.graphics.Path
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.RectF
-import android.os.Build
 import android.os.SystemClock
 import android.view.View
 import com.google.android.material.R as MR
@@ -42,8 +40,8 @@ import org.oxycblt.auxio.whale.sightings.lerp
 /**
  * The home toolbar's title: the sightings' humpback, drawn in the title's colour, singing. Three
  * notes rise from its head in turn and fade, and it bobs gently. Design "B · Whale song" in
- * art/whale-header-mockup.html, whose timings this follows. With system animations off it holds
- * still, notes showing.
+ * art/whale-header-mockup.html, whose timings this follows. Like the whale sightings, it keeps
+ * singing with system animations off.
  */
 @SuppressLint("ViewConstructor")
 class SingingWhale(context: Context) : View(context) {
@@ -70,9 +68,7 @@ class SingingWhale(context: Context) : View(context) {
     }
 
     override fun onDraw(canvas: Canvas) {
-        val animate =
-            Build.VERSION.SDK_INT < Build.VERSION_CODES.O || ValueAnimator.areAnimatorsEnabled()
-        val t = if (animate) (SystemClock.uptimeMillis() - start) / 1000f else 0f
+        val t = (SystemClock.uptimeMillis() - start) / 1000f
         val s = height / HEIGHT
 
         canvas.save()
@@ -81,7 +77,7 @@ class SingingWhale(context: Context) : View(context) {
 
         // The whale, bobbing a little over six seconds.
         val layer = canvas.saveLayer(layerBounds, null)
-        canvas.translate(0f, if (animate) BOB * wave(t / 6f) else 0f)
+        canvas.translate(0f, BOB * wave(t / 6f))
         canvas.drawPath(Humpback.flipper, ink)
         canvas.drawPath(Humpback.body, ink)
         cut.style = Paint.Style.STROKE
@@ -98,23 +94,21 @@ class SingingWhale(context: Context) : View(context) {
         for (n in NOTES) {
             var dx = 0f
             var dy = 0f
-            var a = 1f
-            if (animate) {
-                val u = (((t - n.delay) % PERIOD + PERIOD) % PERIOD) / PERIOD
-                when {
-                    u < 0.55f -> { dy = 3f; a = 0f }
-                    u < 0.9f -> {
-                        val k = ease((u - 0.55f) / 0.35f)
-                        dx = lerp(0f, 3f, k)
-                        dy = lerp(3f, -4f, k)
-                        a = ease((u - 0.55f) / 0.1f)
-                    }
-                    else -> {
-                        val k = ease((u - 0.9f) / 0.1f)
-                        dx = lerp(3f, 4f, k)
-                        dy = lerp(-4f, -6f, k)
-                        a = 1f - k
-                    }
+            val a: Float
+            val u = (((t - n.delay) % PERIOD + PERIOD) % PERIOD) / PERIOD
+            when {
+                u < 0.55f -> { dy = 3f; a = 0f }
+                u < 0.9f -> {
+                    val k = ease((u - 0.55f) / 0.35f)
+                    dx = lerp(0f, 3f, k)
+                    dy = lerp(3f, -4f, k)
+                    a = ease((u - 0.55f) / 0.1f)
+                }
+                else -> {
+                    val k = ease((u - 0.9f) / 0.1f)
+                    dx = lerp(3f, 4f, k)
+                    dy = lerp(-4f, -6f, k)
+                    a = 1f - k
                 }
             }
             if (a <= 0f) continue
@@ -129,7 +123,7 @@ class SingingWhale(context: Context) : View(context) {
         ink.alpha = alpha
         canvas.restore()
 
-        if (animate) postInvalidateOnAnimation()
+        postInvalidateOnAnimation()
     }
 
     private class Note(val x: Float, val y: Float, val scale: Float, val delay: Float)
