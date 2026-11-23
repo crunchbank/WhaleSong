@@ -8,6 +8,13 @@
         android:title="@string/lbl_search"
         app:showAsAction="ifRoom" />
 
+    <!-- WhaleSong: switches the Albums tab between a list and a grid of covers. -->
+    <item
+        android:id="@+id/action_album_layout"
+        android:icon="@drawable/ic_view_grid_24"
+        android:title="@string/ws_lbl_show_covers"
+        app:showAsAction="always" />
+
     <item
         android:id="@+id/action_sort"
         android:icon="@drawable/ic_sort_24"

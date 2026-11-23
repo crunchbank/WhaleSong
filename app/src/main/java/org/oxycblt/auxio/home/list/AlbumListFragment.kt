@@ -18,12 +18,15 @@
  
 package org.oxycblt.auxio.home.list
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
+import androidx.core.view.updatePadding
 import androidx.fragment.app.activityViewModels
+import androidx.recyclerview.widget.GridLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import org.oxycblt.auxio.R
@@ -42,6 +45,8 @@ import org.oxycblt.auxio.music.MusicViewModel
 import org.oxycblt.auxio.playback.PlaybackViewModel
 import org.oxycblt.auxio.playback.formatDurationMsPopup
 import org.oxycblt.auxio.util.collectImmediately
+import org.oxycblt.auxio.whale.covers.AlbumCoverViewHolder
+import org.oxycblt.auxio.whale.covers.AlbumCovers
 import org.oxycblt.musikr.Album
 import org.oxycblt.musikr.Music
 import org.oxycblt.musikr.MusicParent
@@ -63,6 +68,8 @@ class AlbumListFragment :
     override val musicModel: MusicViewModel by activityViewModels()
     override val playbackModel: PlaybackViewModel by activityViewModels()
     private val albumAdapter = AlbumAdapter(this)
+    // WhaleSong: the columns the list itself uses (more than one only on a wide screen).
+    private var listSpan = 1
 
     override fun onCreateBinding(inflater: LayoutInflater) =
         FragmentHomeListBinding.inflate(inflater)
@@ -75,6 +82,7 @@ class AlbumListFragment :
             adapter = albumAdapter
             popupProvider = this@AlbumListFragment
             listener = this@AlbumListFragment
+            listSpan = (layoutManager as GridLayoutManager).spanCount
         }
 
         binding.homeNoMusicPlaceholder.apply {
@@ -85,6 +93,7 @@ class AlbumListFragment :
 
         binding.homeNoMusicAction.setOnClickListener { homeModel.startChooseMusicLocations() }
 
+        collectImmediately(AlbumCovers.load(requireContext()), ::updateLayout)
         collectImmediately(homeModel.albumList, ::updateAlbums)
         collectImmediately(homeModel.empty, musicModel.indexingState, ::updateNoMusicIndicator)
         collectImmediately(listModel.selected, ::updateSelection)
@@ -159,6 +168,17 @@ class AlbumListFragment :
         listModel.openMenu(R.menu.album, item)
     }
 
+    /** WhaleSong: switches between the list and the grid of covers. */
+    private fun updateLayout(grid: Boolean?) {
+        val covers = grid ?: return
+        val recycler = requireBinding().homeRecycler
+        (recycler.layoutManager as GridLayoutManager).spanCount =
+            if (covers) AlbumCovers.columns(requireContext()) else listSpan
+        val side = if (covers) resources.getDimensionPixelSize(R.dimen.spacing_small) else 0
+        recycler.updatePadding(left = side, right = side)
+        albumAdapter.covers = covers
+    }
+
     private fun updateAlbums(albums: List<Album>) {
         albumAdapter.update(albums, homeModel.albumInstructions.consume())
     }
@@ -183,18 +203,38 @@ class AlbumListFragment :
     }
 
     /**
-     * A [SelectionIndicatorAdapter] that shows a list of [Album]s using [AlbumViewHolder].
+     * A [SelectionIndicatorAdapter] that shows a list of [Album]s using [AlbumViewHolder], or
+     * (WhaleSong) a grid of their covers using [AlbumCoverViewHolder].
      *
      * @param listener An [SelectableListListener] to bind interactions to.
      */
     private class AlbumAdapter(private val listener: SelectableListListener<Album>) :
-        SelectionIndicatorAdapter<Album, AlbumViewHolder>(AlbumViewHolder.DIFF_CALLBACK) {
+        SelectionIndicatorAdapter<Album, SelectionIndicatorAdapter.ViewHolder>(
+            AlbumViewHolder.DIFF_CALLBACK,
+        ) {
+        // WhaleSong: covers or list rows; every item is redrawn when this changes.
+        var covers = false
+            @SuppressLint("NotifyDataSetChanged")
+            set(value) {
+                if (field == value) return
+                field = value
+                notifyDataSetChanged()
+            }
+
+        override fun getItemViewType(position: Int) =
+            if (covers) AlbumCoverViewHolder.VIEW_TYPE else AlbumViewHolder.VIEW_TYPE
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
-            AlbumViewHolder.from(parent)
+            when (viewType) {
+                AlbumCoverViewHolder.VIEW_TYPE -> AlbumCoverViewHolder.from(parent)
+                else -> AlbumViewHolder.from(parent)
+            }
 
-        override fun onBindViewHolder(holder: AlbumViewHolder, position: Int) {
-            holder.bind(getItem(position), listener)
+        override fun onBindViewHolder(holder: SelectionIndicatorAdapter.ViewHolder, position: Int) {
+            when (holder) {
+                is AlbumCoverViewHolder -> holder.bind(getItem(position), listener)
+                is AlbumViewHolder -> holder.bind(getItem(position), listener)
+            }
         }
     }
 }

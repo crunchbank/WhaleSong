@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- WhaleSong: a rounded tile behind an album in the cover grid, tinted while selected. -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="?attr/colorControlHighlight">
+    <item android:id="@android:id/mask">
+        <shape android:shape="rectangle">
+            <corners android:radius="@dimen/m3_shape_corners_large" />
+            <solid android:color="@android:color/white" />
+        </shape>
+    </item>
+    <item>
+        <selector
+            android:enterFadeDuration="@integer/anim_fade_enter_duration"
+            android:exitFadeDuration="@integer/anim_fade_exit_duration">
+            <item android:state_activated="true">
+                <shape android:shape="rectangle">
+                    <corners android:radius="@dimen/m3_shape_corners_large" />
+                    <solid android:color="@color/sel_item_activated_bg" />
+                </shape>
+            </item>
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="@android:color/transparent" />
+                </shape>
+            </item>
+        </selector>
+    </item>
+</ripple>

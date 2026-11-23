@@ -113,6 +113,8 @@ object IntegerTable {
     const val SORT_BY_DATE_ADDED = 0xA118
     /** Sort.Mode.ByPlays (WhaleSong; its codes start at 0xB100 to stay clear of Auxio's) */
     const val SORT_BY_PLAYS = 0xB101
+    /** AlbumCoverViewHolder (WhaleSong) */
+    const val VIEW_TYPE_ALBUM_COVER = 0xB102
     /** ReplayGainMode.Off (No longer used but still reserved) */
     const val REPLAY_GAIN_MODE_OFF = 0xA110
     /** ReplayGainMode.Track */

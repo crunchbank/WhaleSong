@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- WhaleSong: one album in the cover grid: a square cover, with name and artist beneath. -->
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="@dimen/spacing_tiny"
+    android:background="@drawable/ws_cover_item_bg"
+    android:padding="6dp">
+
+    <org.oxycblt.auxio.image.CoverView
+        android:id="@+id/cover_image"
+        style="@style/Widget.Auxio.Image.Full"
+        app:shapeAppearance="@style/ShapeAppearance.Material3.Corner.Large"
+        app:iconSize="@dimen/size_icon_large"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/cover_name"
+        style="@style/Widget.Auxio.TextView.Item.Primary"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/spacing_small"
+        android:layout_marginStart="@dimen/spacing_tiny"
+        android:textStyle="bold"
+        android:textColor="@color/sel_selectable_text_primary"
+        app:layout_constraintEnd_toStartOf="@+id/cover_menu"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/cover_image"
+        tools:text="Album" />
+
+    <TextView
+        android:id="@+id/cover_info"
+        style="@style/Widget.Auxio.TextView.Item.Secondary"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/spacing_tiny"
+        app:layout_constraintEnd_toStartOf="@+id/cover_menu"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/cover_name"
+        tools:text="Artist" />
+
+    <org.oxycblt.auxio.ui.RippleFixMaterialButton
+        android:id="@+id/cover_menu"
+        style="@style/Widget.Auxio.Button.Icon.Small"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="-8dp"
+        app:icon="@drawable/ic_more_24"
+        app:layout_constraintBottom_toBottomOf="@+id/cover_info"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/cover_name" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

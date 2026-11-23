@@ -26,6 +26,8 @@ import android.view.LayoutInflater
 import android.view.MenuItem
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.widget.TooltipCompat
+import androidx.core.content.ContextCompat
 import androidx.core.view.MenuCompat
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
@@ -67,6 +69,7 @@ import org.oxycblt.auxio.util.collectImmediately
 import org.oxycblt.auxio.util.dampen
 import org.oxycblt.auxio.util.navigateSafe
 import org.oxycblt.auxio.util.showToast
+import org.oxycblt.auxio.whale.covers.AlbumCovers
 import org.oxycblt.musikr.IndexingProgress
 import org.oxycblt.musikr.Music
 import org.oxycblt.musikr.Playlist
@@ -168,6 +171,7 @@ class HomeFragment : SelectionFragment<FragmentHomeBinding>() {
         collect(homeModel.recreateTabs.flow, ::handleRecreate)
         collect(homeModel.chooseMusicLocations.flow, ::handleChooseFolders)
         collectImmediately(homeModel.currentTabType, ::updateCurrentTab)
+        collectImmediately(AlbumCovers.load(requireContext()), ::updateAlbumLayoutButton)
         collect(detailModel.toShow.flow, ::handleShow)
         collect(listModel.menu.flow, ::handleMenu)
         collectImmediately(listModel.selected, ::updateSelection)
@@ -193,6 +197,10 @@ class HomeFragment : SelectionFragment<FragmentHomeBinding>() {
             R.id.action_search -> {
                 L.d("Navigating to search")
                 findNavController().navigateSafe(HomeFragmentDirections.search())
+                true
+            }
+            R.id.action_album_layout -> {
+                AlbumCovers.toggle(requireContext())
                 true
             }
             R.id.action_unplayed -> {
@@ -262,6 +270,9 @@ class HomeFragment : SelectionFragment<FragmentHomeBinding>() {
 
     private fun updateCurrentTab(tabType: MusicType) {
         val binding = requireBinding()
+        // WhaleSong: the list/covers switch belongs to the Albums tab alone.
+        binding.homeNormalToolbar.getMenuButton(R.id.action_album_layout)?.isVisible =
+            tabType == MusicType.ALBUMS
 
         // Update the scrolling view in AppBarLayout to align with the current tab's
         // scrolling state. This prevents the lift state from being confused as one
@@ -274,6 +285,22 @@ class HomeFragment : SelectionFragment<FragmentHomeBinding>() {
                 MusicType.GENRES -> R.id.home_genre_recycler
                 MusicType.PLAYLISTS -> R.id.home_playlist_recycler
             }
+    }
+
+    /** WhaleSong: the button offers whichever layout isn't showing. */
+    private fun updateAlbumLayoutButton(grid: Boolean?) {
+        val button =
+            requireBinding().homeNormalToolbar.getMenuButton(R.id.action_album_layout) ?: return
+        val covers = grid ?: true
+        // Loaded with this fragment's theme, as the menu's own icons are.
+        button.icon =
+            ContextCompat.getDrawable(
+                requireContext(),
+                if (covers) R.drawable.ic_view_list_24 else R.drawable.ic_view_grid_24,
+            )
+        button.contentDescription =
+            getString(if (covers) R.string.ws_lbl_show_list else R.string.ws_lbl_show_covers)
+        TooltipCompat.setTooltipText(button, button.contentDescription)
     }
 
     private fun handleRecreate(recreate: Unit?) {
