@@ -55,8 +55,9 @@ import org.oxycblt.musikr.Playlist
 
 /**
  * Whether each library tab (albums, artists, genres, playlists) shows a list or a grid of covers.
- * Covers are the default; each tab's choice is kept in the preferences and switched from the home
- * toolbar. An artist's albums and a genre's artists follow the Albums and Artists tabs.
+ * Albums start as covers and the other tabs as lists; each tab's choice is kept in the preferences
+ * and switched from the home toolbar. An artist's albums and a genre's artists follow the Albums
+ * and Artists tabs.
  */
 object CoverGrid {
     private val states = HashMap<MusicType, MutableStateFlow<Boolean>>()
@@ -78,7 +79,8 @@ object CoverGrid {
     fun state(context: Context, type: MusicType): StateFlow<Boolean> =
         states.getOrPut(type) {
             val prefs = PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
-            MutableStateFlow(prefs.getBoolean(key(context, type), true))
+            // Albums start as covers, the other tabs as lists.
+            MutableStateFlow(prefs.getBoolean(key(context, type), type == MusicType.ALBUMS))
         }
 
     fun toggle(context: Context, type: MusicType) {

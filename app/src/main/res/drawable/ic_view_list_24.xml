@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- WhaleSong: Material "view list" icon (Apache 2.0). -->
+<!-- WhaleSong: drawn with 2dp strokes to match Auxio's toolbar icons (e.g. ic_sort_24). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
@@ -8,5 +8,5 @@
     android:viewportHeight="24">
     <path
         android:fillColor="@android:color/white"
-        android:pathData="M3,14h4v-4H3V14zM3,19h4v-4H3V19zM3,9h4V5H3V9zM8,14h13v-4H8V14zM8,19h13v-4H8V19zM8,5v4h13V5H8z" />
+        android:pathData="M4,6h2v2h-2z M8,6h12v2h-12z M4,11h2v2h-2z M8,11h12v2h-12z M4,16h2v2h-2z M8,16h12v2h-12z" />
 </vector>
