@@ -22,6 +22,7 @@ import android.content.Context
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import org.oxycblt.musikr.Config
 import org.oxycblt.musikr.Storage
@@ -50,7 +51,10 @@ private class ExploreStepImpl(private val fs: FS, private val storage: Storage) 
         explored: Channel<Explored>,
     ): Deferred<Result<Unit>> {
         val files = Channel<File>(Channel.UNLIMITED)
-        val filesTask = fs.explore(files)
+        // WhaleSong: started in the background. FS.explore only returns once the whole walk is
+        // done, so calling it directly held back the cache and cover lookups below until every
+        // folder had been listed, instead of letting them work on files as they are found.
+        val filesTask = scope.async(Dispatchers.IO) { fs.explore(files).await() }
 
         val classified = Channel<Classified>(Channel.UNLIMITED)
         val classifiedTask =

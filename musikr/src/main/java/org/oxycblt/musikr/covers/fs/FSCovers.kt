@@ -24,6 +24,8 @@ import android.net.Uri
 import android.os.ParcelFileDescriptor
 import androidx.core.net.toUri
 import java.io.InputStream
+import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.oxycblt.musikr.covers.Cover
@@ -92,7 +94,28 @@ class FSCovers(private val context: Context) : Covers<FDCover> {
 class MutableFSCovers(private val context: Context) : MutableCovers<FDCover> {
     private val inner = FSCovers(context)
 
-    override suspend fun obtain(id: String): CoverResult<FDCover> = inner.obtain(id)
+    // WhaleSong: every song in an album shares its folder cover, and checking that the cover still
+    // exists means opening it through the file provider, which is slow (tens of ms on a phone). A
+    // cached load checked it once per song: ~7,700 opens and 20+ seconds for a 7,000-song library.
+    // This instance lives for one scan, so each cover is now checked once per scan, and songs that
+    // ask while the check is running wait for it instead of opening the file again.
+    private val checked = ConcurrentHashMap<String, CompletableDeferred<CoverResult<FDCover>>>()
+
+    override suspend fun obtain(id: String): CoverResult<FDCover> {
+        val mine = CompletableDeferred<CoverResult<FDCover>>()
+        val existing = checked.putIfAbsent(id, mine)
+        if (existing != null) return existing.await()
+        val result =
+            try {
+                inner.obtain(id)
+            } catch (e: Throwable) {
+                checked.remove(id, mine)
+                mine.completeExceptionally(e)
+                throw e
+            }
+        mine.complete(result)
+        return result
+    }
 
     override suspend fun create(file: File, metadata: Metadata): CoverResult<FDCover> {
         // Since DeviceFiles is a streaming API, we have to wait for the current recursive
