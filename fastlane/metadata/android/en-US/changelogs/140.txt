@@ -1,0 +1,1 @@
+• Builds are now reproducible: the APK on GitHub and the one built by F-Droid are identical, so you can switch between them without reinstalling.
