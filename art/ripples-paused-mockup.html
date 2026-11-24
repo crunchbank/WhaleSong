@@ -1,0 +1,127 @@
+<!doctype html>
+<!--
+  Copyright (c) 2026 crunchbank (WhaleSong). Licensed under the GNU General Public License,
+  version 3 or (at your option) any later version.
+
+  Mockup: paused states for the ripples playing indicator, shown at the app's real sizes beside
+  the no-cover placeholder (Material's album icon), which the first paused design resembled.
+  The ripple box is 80% of the cover, as in the indicator mockup.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paused ripples mockup</title>
+<style>
+  :root {
+    --bg: #faf8fe; --text: #1b1b21; --sub: #5d5a66; --tile: #afc0f4; --ink: #4f378b;
+    --grey: #ecebf1; --greyink: #2f2f36; --rule: #e4e1ec; --panel: #f1eff7;
+  }
+  .dark {
+    --bg: #121318; --text: #e4e1e9; --sub: #a9a8b3; --tile: #34426e; --ink: #dbe1ff;
+    --grey: #24252b; --greyink: #e4e1e9; --rule: #2a2b31; --panel: #1b1c22;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.4 Inter, system-ui, -apple-system, sans-serif; }
+  header { position: sticky; top: 0; z-index: 2; background: var(--bg); border-bottom: 1px solid var(--rule);
+           padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+  header h1 { font-size: 17px; margin: 0 8px 0 0; font-weight: 600; }
+  button.seg { border: 1px solid var(--rule); background: var(--panel); color: var(--text);
+               padding: 6px 12px; border-radius: 18px; font: inherit; font-size: 14px; cursor: pointer; }
+  button.seg[aria-pressed="true"] { background: var(--tile); color: var(--ink); border-color: transparent; }
+  main { padding: 16px; display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+  .card { background: var(--panel); border-radius: 20px; padding: 16px; }
+  .card h2 { font-size: 16px; margin: 0 0 2px; }
+  .card p { margin: 0 0 12px; color: var(--sub); font-size: 13.5px; }
+  .stage { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+  .tile { border-radius: 14px; display: grid; place-items: center; flex: none; }
+  .tile svg { width: 80%; height: 80%; overflow: visible; }
+  .on { background: var(--tile); color: var(--ink); }
+  .ph { background: var(--grey); color: var(--greyink); }
+  .ph svg { width: 50%; height: 50%; }
+  .g { width: 92px; height: 92px; }
+  .r { width: 42px; height: 42px; border-radius: 10px; }
+  .lbl { font-size: 12px; color: var(--sub); text-align: center; margin-top: 4px; }
+  .col { display: flex; flex-direction: column; align-items: center; }
+  .rows { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+  .row { display: flex; align-items: center; gap: 12px; }
+  .row .t { font-size: 15px; } .row .s { font-size: 13px; color: var(--sub); }
+  .row.cur .t { color: var(--ink); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Paused ripples</h1>
+  <button class="seg" id="theme" aria-pressed="false">Dark</button>
+  <span style="color:var(--sub);font-size:13.5px">Each card: paused, playing, and the no-cover placeholder, at grid and row size.</span>
+</header>
+<main id="cards"></main>
+<script>
+const TAU = Math.PI * 2;
+const W = 1.7;
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const ALBUM_D = "M12,16.5Q13.875,16.5 15.188,15.188Q16.5,13.875 16.5,12Q16.5,10.125 15.188,8.812Q13.875,7.5 12,7.5Q10.125,7.5 8.812,8.812Q7.5,10.125 7.5,12Q7.5,13.875 8.812,15.188Q10.125,16.5 12,16.5ZM12,13Q11.575,13 11.288,12.712Q11,12.425 11,12Q11,11.575 11.288,11.287Q11.575,11 12,11Q12.425,11 12.713,11.287Q13,11.575 13,12Q13,12.425 12.713,12.712Q12.425,13 12,13ZM12,22Q9.925,22 8.1,21.212Q6.275,20.425 4.925,19.075Q3.575,17.725 2.788,15.9Q2,14.075 2,12Q2,9.925 2.788,8.1Q3.575,6.275 4.925,4.925Q6.275,3.575 8.1,2.787Q9.925,2 12,2Q14.075,2 15.9,2.787Q17.725,3.575 19.075,4.925Q20.425,6.275 21.212,8.1Q22,9.925 22,12Q22,14.075 21.212,15.9Q20.425,17.725 19.075,19.075Q17.725,20.425 15.9,21.212Q14.075,22 12,22ZM12,20Q15.35,20 17.675,17.675Q20,15.35 20,12Q20,8.65 17.675,6.325Q15.35,4 12,4Q8.65,4 6.325,6.325Q4,8.65 4,12Q4,15.35 6.325,17.675Q8.65,20 12,20Z";
+
+const ring = (r, o, w = W) => `<circle cx="12" cy="12" r="${r.toFixed(2)}" fill="none" stroke="currentColor" stroke-width="${w}" opacity="${o.toFixed(3)}"/>`;
+const dot = (r, cx = 12, cy = 12) => `<circle cx="${cx}" cy="${cy}" r="${r}" fill="currentColor"/>`;
+
+// The playing ripples, as built.
+function playing(t) {
+  const P = 2.4, c = t / P;
+  let s = "";
+  for (let k = 0; k < 3; k++) {
+    const f = (c + k / 3) % 1;
+    s += ring(2.6 + 7.4 * f, Math.pow(1 - f, 1.4) * clamp(f * 6));
+  }
+  return s + dot((1.5 + 0.35 * Math.max(0, Math.cos(TAU * c * 3))).toFixed(2));
+}
+
+const OPTIONS = [
+  { name: "Chosen: drop and two rings, faded", blurb: "Today's design with the inner ring and the drop faded to match the outer ring (45%). Built.",
+    paused: () => ring(5.2, 0.45) + ring(8.8, 0.45) + `<circle cx="12" cy="12" r="1.5" fill="currentColor" opacity="0.45"/>` },
+  { name: "Today: drop and two rings", blurb: "What's built now. A dot inside rings, close to the placeholder's disc.",
+    paused: () => ring(5.2, 0.9) + ring(8.8, 0.45) + dot(1.5) },
+  { name: "A. Drop and one faint ring", blurb: "One ring, half-strength, well away from the drop: a ripple that has settled.",
+    paused: () => ring(7.2, 0.4) + dot(1.9) },
+  { name: "B. Still water", blurb: "The drop resting above a flat line of calm water. Nothing circular, so it can't read as a disc.",
+    paused: () => dot(1.9, 12, 9.4) + `<path d="M5,15.2 L19,15.2" stroke="currentColor" stroke-width="${W}" stroke-linecap="round"/>` },
+  { name: "C. Ripple seen from the side", blurb: "The drop and its ripple in perspective, a flattened ring lying on the water around it.",
+    paused: () => dot(1.9, 12, 8.6) + `<ellipse cx="12" cy="13.6" rx="8.2" ry="2.7" fill="none" stroke="currentColor" stroke-width="${W}" opacity="0.75"/>` },
+  { name: "D. Calm swell", blurb: "Two short, gentle wave lines with the drop above: still water, matching the waves elsewhere in the app.",
+    paused: () => dot(1.9, 12, 7.8) + [12.6, 16.4].map((y, i) => {
+      let d = ""; for (let x = 5 + i * 1.5; x <= 19 - i * 1.5 + 0.01; x += 0.5) d += (d ? " L" : "M") + x.toFixed(2) + "," + (y + 0.55 * Math.sin(TAU * x / 7)).toFixed(2);
+      return `<path d="${d}" fill="none" stroke="currentColor" stroke-width="${W}" stroke-linecap="round" opacity="${i ? 0.5 : 1}"/>`; }).join("") },
+  { name: "E. Just the drop", blurb: "Only the drop, a little larger. The quietest: the ripples have gone and the water is still.",
+    paused: () => dot(2.4) },
+];
+
+const main = document.getElementById("cards");
+const live = [];
+for (const o of OPTIONS) {
+  const c = document.createElement("section");
+  c.className = "card";
+  c.innerHTML = `<h2>${o.name}</h2><p>${o.blurb}</p>
+    <div class="stage">
+      <div class="col"><div class="tile g on"><svg viewBox="0 0 24 24">${o.paused()}</svg></div><div class="lbl">Paused</div></div>
+      <div class="col"><div class="tile g on"><svg viewBox="0 0 24 24" class="play"></svg></div><div class="lbl">Playing</div></div>
+      <div class="col"><div class="tile g ph"><svg viewBox="0 0 24 24"><path d="${ALBUM_D}" fill="currentColor"/></svg></div><div class="lbl">No cover</div></div>
+    </div>
+    <div class="rows">
+      <div class="row cur"><div class="tile r on"><svg viewBox="0 0 24 24">${o.paused()}</svg></div><div><div class="t">Second Movement: Breach</div><div class="s">Paused</div></div></div>
+      <div class="row"><div class="tile r ph"><svg viewBox="0 0 24 24"><path d="${ALBUM_D}" fill="currentColor"/></svg></div><div><div class="t">Test Tone 1</div><div class="s">No cover</div></div></div>
+    </div>`;
+  main.appendChild(c);
+  live.push(c.querySelector("svg.play"));
+}
+const t0 = performance.now();
+(function frame() {
+  const s = playing((performance.now() - t0) / 1000);
+  for (const v of live) v.innerHTML = s;
+  requestAnimationFrame(frame);
+})();
+const bt = document.getElementById("theme");
+bt.onclick = () => bt.setAttribute("aria-pressed", document.documentElement.classList.toggle("dark"));
+</script>
+</body>
+</html>

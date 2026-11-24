@@ -40,7 +40,7 @@ import kotlin.math.roundToInt
  * like a whale's song through water. Replaces Auxio's dancing equaliser bars.
  *
  * Playing, three rings spread outwards one after another and fade, while the drop at the centre
- * pulses gently. [playing] false draws the paused state: the drop with two still rings.
+ * pulses gently. [playing] false draws the paused state: the drop with two still rings, faded.
  *
  * Drawn in a 24-unit box like a 24dp vector icon, and tinted like one (the cover view gives it its
  * colours through [setTintList]). It keeps its own frame clock rather than using an animator, so it
@@ -87,9 +87,11 @@ class RippleIndicator(context: Context, private val playing: Boolean) : Drawable
             val pulse = 1.5f + 0.35f * max(0f, cos(2f * PI.toFloat() * cycle * 3f))
             drawDrop(canvas, pulse)
         } else {
-            drawRing(canvas, 5.2f, 0.9f)
-            drawRing(canvas, 8.8f, 0.45f)
-            drawDrop(canvas, 1.5f)
+            // Paused: everything faded, so it can't be mistaken for the bold disc icon shown on
+            // covers that have no art.
+            drawRing(canvas, 5.2f, PAUSED_STRENGTH)
+            drawRing(canvas, 8.8f, PAUSED_STRENGTH)
+            drawDrop(canvas, 1.5f, PAUSED_STRENGTH)
         }
         canvas.restoreToCount(save)
     }
@@ -99,8 +101,8 @@ class RippleIndicator(context: Context, private val playing: Boolean) : Drawable
         canvas.drawCircle(12f, 12f, radius, ring)
     }
 
-    private fun drawDrop(canvas: Canvas, radius: Float) {
-        drop.color = withAlpha(1f)
+    private fun drawDrop(canvas: Canvas, radius: Float, strength: Float = 1f) {
+        drop.color = withAlpha(strength)
         canvas.drawCircle(12f, 12f, radius, drop)
     }
 
@@ -177,5 +179,6 @@ class RippleIndicator(context: Context, private val playing: Boolean) : Drawable
         /** One ring every [PERIOD_S] / 3 seconds. */
         const val PERIOD_S = 2.4f
         const val FRAME_MS = 16L
+        const val PAUSED_STRENGTH = 0.45f
     }
 }

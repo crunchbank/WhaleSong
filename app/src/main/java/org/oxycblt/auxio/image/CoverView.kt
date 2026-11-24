@@ -238,7 +238,8 @@ constructor(context: Context, attrs: AttributeSet? = null, @AttrRes defStyleAttr
         // behavior with a matrix.
         // FIXME: I think this makes it blurry. Or maybe the animated drawable is blurry itself.
         val playbackIndicator = (playbackIndicator ?: return).view
-        val iconSize = iconSize ?: (measuredWidth / 2)
+        // WhaleSong: the ripples fill most of the cover, whatever icon size the layout asks for.
+        val iconSize = (minOf(measuredWidth, measuredHeight) * RIPPLE_SCALE).toInt()
         playbackIndicator.apply {
             imageMatrix = indicatorMatrix.apply {
                 reset()
@@ -623,3 +624,6 @@ constructor(context: Context, attrs: AttributeSet? = null, @AttrRes defStyleAttr
         override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
     }
 }
+
+/** WhaleSong: the playing ripples are drawn at this fraction of the cover's size. */
+private const val RIPPLE_SCALE = 0.8f
