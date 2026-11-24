@@ -59,7 +59,10 @@ target_link_options(${CMAKE_PROJECT_NAME}
         # https://github.com/taglib/taglib/issues/1212#issuecomment-2326456903
         # Additionally, enable 16kb page size. I believe taglib can support this fine,
         # as a cursory glance indicates that it doesn't hardcode any page sizes.
-        PRIVATE "-Wl,--exclude-libs,ALL,-z,max-page-size=16384")
+        PRIVATE "-Wl,--exclude-libs,ALL,-z,max-page-size=16384"
+        # WhaleSong: no build ID. It is a hash taken before debug info is stripped, so it
+        # depends on the build machine's paths and stops builds being reproducible.
+        PRIVATE "-Wl,--build-id=none")
 
 # Specifies libraries CMake should link to your target library. You
 # can link libraries from various origins, such as libraries defined in this

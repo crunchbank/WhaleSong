@@ -12,11 +12,14 @@ problems here, not to Auxio.
 ## Building
 
 Clone with submodules (`git clone --recursive`, or `git submodule update --init --recursive`),
-apply WhaleSong's fix to the pinned ExoPlayer fork
-(`git -C media apply ../patches/media-remove-stale-hagc-argument.patch`), then build with JDK 21 and the Android SDK. Gradle installs the NDK it needs; CMake and Ninja
-come from the SDK's `cmake` package:
+apply WhaleSong's two patches to the pinned ExoPlayer fork (a compile fix, and a fix that makes
+the build reproducible), then build with JDK 21 and the Android SDK. Gradle installs the NDK it
+needs; CMake and Ninja come from the SDK's `cmake` package:
 
 ```
+git -C media apply ../patches/media-remove-stale-hagc-argument.patch \
+    ../patches/media-reproducible-native-libraries.patch
+
 export ANDROID_HOME=~/Library/Android/sdk
 export PATH="$ANDROID_HOME/cmake/4.1.2/bin:$PATH"
 ./gradlew assembleDebug

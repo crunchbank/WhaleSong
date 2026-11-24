@@ -1,0 +1,15 @@
+diff --git a/libraries/decoder_ffmpeg/src/main/jni/CMakeLists.txt b/libraries/decoder_ffmpeg/src/main/jni/CMakeLists.txt
+index e07963d740..50028b9388 100644
+--- a/libraries/decoder_ffmpeg/src/main/jni/CMakeLists.txt
++++ b/libraries/decoder_ffmpeg/src/main/jni/CMakeLists.txt
+@@ -57,6 +57,10 @@ target_link_libraries(ffmpegJNI
+                       PRIVATE avutil
+                       PRIVATE ${android_log_lib})
+ 
++# WhaleSong: no build ID. It is a hash taken before debug info is stripped, so it depends on
++# the build machine's paths and stops builds being reproducible.
++target_link_options(ffmpegJNI PRIVATE "-Wl,--build-id=none")
++
+ # Additional flags needed for "arm64-v8a" from NDK 23.1.7779620 and above.
+ # See https://github.com/google/ExoPlayer/issues/9933#issuecomment-1029775358.
+ if(ANDROID_ABI STREQUAL "arm64-v8a")
