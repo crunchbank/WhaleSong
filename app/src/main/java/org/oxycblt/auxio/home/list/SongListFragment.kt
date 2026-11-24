@@ -124,7 +124,9 @@ class SongListFragment :
 
             // Date -> Use song first, *then* year of the range minimum
             is Sort.Mode.ByDate -> {
-                val year = (song.date ?: song.album.dates?.min?.year) ?: return null
+                // WhaleSong: song.date is a Date, not a year, and crashed the %d format.
+                // (From Auxio pull request #1497.)
+                val year = (song.date?.year ?: song.album.dates?.min?.year) ?: return null
                 FastScrollRecyclerView.PopupProvider.PopupData(getString(R.string.fmt_number, year))
             }
 

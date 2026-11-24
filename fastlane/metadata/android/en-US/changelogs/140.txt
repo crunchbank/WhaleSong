@@ -1,1 +1,4 @@
 • Builds are now reproducible: the APK on GitHub and the one built by F-Droid are identical, so you can switch between them without reinstalling.
+• Fixed a crash when fast-scrolling songs sorted by date.
+• The new playlist and rename dialogs open with the keyboard ready; renaming selects the old name.
+• Libraries load faster when names are in the Latin alphabet.

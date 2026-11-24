@@ -103,8 +103,11 @@ private data class IntelligentKnownName(override val raw: String, override val s
                     }
                 }
 
-        // Transliterate to latin if available
-        latin()?.let { stripped = it.transliterate(stripped) }
+        // Transliterate to latin if available. WhaleSong: skip names that are already latin,
+        // which Any-Latin would return unchanged; most names in most libraries are.
+        if (stripped.any { it >= FIRST_NON_LATIN_CHAR }) {
+            latin()?.let { stripped = it.transliterate(stripped) }
+        }
 
         // To properly compare numeric components in names, we have to split them up into
         // individual lexicographic and numeric tokens and then individually compare them
@@ -142,6 +145,12 @@ private data class IntelligentKnownName(override val raw: String, override val s
                 Transliterator.getAvailableIDs().toList().contains("Any-Latin")
         }
         private val latinPerThread = ThreadLocal<Transliterator>()
+
+        /**
+         * WhaleSong: everything below this is Basic Latin, Latin-1 Supplement or Latin
+         * Extended-A/B, which Any-Latin passes through unchanged. (From Auxio pull request #1488.)
+         */
+        private const val FIRST_NON_LATIN_CHAR = 'ɐ'
 
         private fun latin(): Transliterator? {
             if (!hasLatin || Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return null
