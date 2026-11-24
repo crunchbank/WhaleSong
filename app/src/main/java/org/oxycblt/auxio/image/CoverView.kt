@@ -25,7 +25,6 @@ import android.graphics.ColorFilter
 import android.graphics.Matrix
 import android.graphics.PixelFormat
 import android.graphics.RectF
-import android.graphics.drawable.AnimationDrawable
 import android.graphics.drawable.Drawable
 import android.util.AttributeSet
 import android.util.Size
@@ -69,6 +68,7 @@ import org.oxycblt.auxio.util.getAttrColorCompat
 import org.oxycblt.auxio.util.getColorCompat
 import org.oxycblt.auxio.util.getDimenPixels
 import org.oxycblt.auxio.util.getDrawableCompat
+import org.oxycblt.auxio.whale.indicator.RippleIndicator
 import org.oxycblt.musikr.Album
 import org.oxycblt.musikr.Artist
 import org.oxycblt.musikr.Genre
@@ -98,8 +98,9 @@ constructor(context: Context, attrs: AttributeSet? = null, @AttrRes defStyleAttr
 
     private data class PlaybackIndicator(
         val view: ImageView,
-        val playingDrawable: AnimationDrawable,
-        val pausedDrawable: Drawable,
+        // WhaleSong: ripples instead of Auxio's dancing bars.
+        val playingDrawable: RippleIndicator,
+        val pausedDrawable: RippleIndicator,
     )
 
     private val playbackIndicator: PlaybackIndicator?
@@ -167,9 +168,8 @@ constructor(context: Context, attrs: AttributeSet? = null, @AttrRes defStyleAttr
                             context.getColorCompat(R.color.sel_on_cover_bg),
                         )
                     },
-                    context.getDrawableCompat(R.drawable.ic_playing_indicator_24)
-                        as AnimationDrawable,
-                    context.getDrawableCompat(R.drawable.ic_paused_indicator_24),
+                    RippleIndicator(context, playing = true),
+                    RippleIndicator(context, playing = false),
                 )
             } else {
                 null

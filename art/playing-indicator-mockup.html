@@ -1,0 +1,419 @@
+<!doctype html>
+<!--
+  Copyright (c) 2026 crunchbank (WhaleSong). Licensed under the GNU General Public License,
+  version 3 or (at your option) any later version.
+
+  Mockup: whale/ocean replacements for Auxio's "dancing bars" playing indicator, the icon shown
+  on the cover of whatever is playing. Each concept is drawn in a 24-unit box, like the 24dp
+  vector it would become, and shown at the sizes the app uses it.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Playing indicator mockup</title>
+<style>
+  :root {
+    --bg: #faf8fe; --text: #1b1b21; --sub: #483d5f; --tile: #afc0f4; --ink: #4f378b;
+    --rule: #e4e1ec; --panel: #f1eff7;
+  }
+  .dark {
+    --bg: #121318; --text: #e4e1e9; --sub: #c6c5d0; --tile: #34426e; --ink: #dbe1ff;
+    --rule: #2a2b31; --panel: #1b1c22;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.4 Inter, system-ui, -apple-system, sans-serif; }
+  header { position: sticky; top: 0; z-index: 2; background: var(--bg);
+           border-bottom: 1px solid var(--rule); padding: 12px 16px;
+           display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; }
+  header h1 { font-size: 17px; margin: 0 12px 0 0; font-weight: 600; }
+  label { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--sub); }
+  button.seg { border: 1px solid var(--rule); background: var(--panel); color: var(--text);
+               padding: 6px 12px; border-radius: 18px; font: inherit; font-size: 14px; cursor: pointer; }
+  button.seg[aria-pressed="true"] { background: var(--tile); color: var(--ink); border-color: transparent; }
+  main { padding: 16px; display: grid; gap: 16px;
+         grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+  .card { background: var(--panel); border-radius: 20px; padding: 16px; }
+  .card h2 { font-size: 16px; margin: 0 0 2px; }
+  .card p { margin: 0 0 14px; color: var(--sub); font-size: 13.5px; }
+  .stage { display: flex; gap: 16px; align-items: center; }
+  .big { width: 120px; height: 120px; border-radius: 22px; background: var(--tile);
+         display: grid; place-items: center; flex: none; }
+  .big svg { width: 96px; height: 96px; }
+  .grid { width: 112px; height: 112px; border-radius: 14px; background: var(--tile);
+          display: grid; place-items: center; flex: none; }
+  .grid svg { width: 36px; height: 36px; }
+  .row { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+  .thumb { width: 42px; height: 42px; border-radius: 10px; background: var(--tile);
+           display: grid; place-items: center; flex: none; }
+  .thumb svg { width: 24px; height: 24px; }
+  .row .t { font-size: 15px; color: var(--ink); }
+  .row .s { font-size: 13px; color: var(--sub); }
+  svg * { vector-effect: none; }
+  @media (max-width: 400px) { .stage { flex-wrap: wrap; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Playing indicator</h1>
+  <button class="seg" id="play" aria-pressed="true">Playing</button>
+  <button class="seg" id="pause" aria-pressed="false">Paused</button>
+  <button class="seg" id="theme" aria-pressed="false">Dark</button>
+  <label>Speed <input id="speed" type="range" min="0.5" max="1.5" step="0.05" value="1"> <span id="speedv">1.00×</span></label>
+  <label>Line weight <input id="weight" type="range" min="1.2" max="2.4" step="0.1" value="1.7"> <span id="weightv">1.7</span></label>
+</header>
+<main id="cards"></main>
+
+<script>
+// The humpback side-on (body units, facing +x) and the app icon's fluke (icon units), as in
+// app/src/main/java/org/oxycblt/auxio/whale/sightings/Humpback.kt.
+const BODY_D = "M25.2,0.5 Q25.2,-0.9 23.6,-1.4 Q22.9,-1.6 22.2,-1.8 Q21.23,-1.62 20.45,-2.23 Q19.48,-2.05 18.7,-2.65 Q17.73,-2.47 16.95,-3.08 Q15.98,-2.9 15.2,-3.5 Q13.6,-4.7 11.6,-4.6 C6,-5.6 -1,-6.4 -6,-6.3 Q-8.6,-6.3 -10,-7.0 Q-11.2,-8.4 -12.4,-8.3 Q-12.7,-7.4 -13.8,-6.4 Q-14.38,-5.88 -15.14,-5.76 Q-15.72,-5.24 -16.48,-5.12 Q-17.06,-4.6 -17.82,-4.48 Q-18.4,-3.96 -19.16,-3.84 Q-19.74,-3.32 -20.5,-3.2 C-22.2,-2.4 -23.6,-1.5 -25,-1.0 C-28.5,-1.3 -32,-0.9 -35.2,0.9 Q-31.5,1.3 -25,0.9 C-18,2.0 -12,3.6 -6,5.0 C0,6.7 6.5,7.0 10.5,6.0 C15,4.9 20.5,3.2 23.6,2.2 Q25.6,1.6 25.2,0.5 Z";
+const FLIPPER_D = "M13.6,2.6 C11,5.6 6.5,9.2 0.8,11.6 Q-0.42,11.58 -1.33,12.4 Q-2.56,12.38 -3.47,13.2 Q-4.69,13.18 -5.6,14 Q-6.6,14.3 -5.6,13.0 C-2,10.2 2.5,7.6 8.2,4.2 Z";
+const FLUKE_D = "M48.9,84 C49.94,73 51.22,62.5 51.56,56.2 C47.5,53.6 40.31,50.9 35.67,46.6 C31.73,42.9 29.64,37.6 29.52,30.2 Q31.96,33.6 34.98,35 Q36.54,35.02 37.57,36.03 Q39.13,36.05 40.16,37.07 Q41.72,37.08 42.75,38.1 Q44.31,38.12 45.34,39.13 Q46.9,39.15 47.93,40.17 Q49.49,40.18 50.52,41.2 C52.14,41.9 53.3,43 54,44.2 C54.7,43 55.86,41.9 57.48,41.2 Q58.51,40.18 60.07,40.17 Q61.1,39.15 62.66,39.13 Q63.69,38.12 65.25,38.1 Q66.28,37.08 67.84,37.07 Q68.87,36.05 70.43,36.03 Q71.46,35.02 73.02,35 Q76.04,33.6 78.48,30.2 C78.36,37.6 76.27,42.9 72.33,46.6 C67.69,50.9 60.5,53.6 56.44,56.2 C56.78,62.5 58.06,73 59.1,84 Z";
+
+const TAU = Math.PI * 2;
+function mulberry(a) {   // small seeded random, so the blow's puffs are the same every cycle
+  return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+const ease = x => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;   // easeInOutCubic
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+let W = 1.7;           // line weight, in 24ths of the icon
+let speed = 1;
+let playing = true;
+let pausedAt = 0;      // seconds of animation time when paused
+let clockBase = performance.now();
+
+function wavePath(y, amp, len, phase, x0 = 3.5, x1 = 20.5) {
+  let d = "";
+  for (let x = x0; x <= x1 + 0.001; x += 0.5) {
+    const yy = y + amp * Math.sin(TAU * (x / len) + phase);
+    d += (d ? " L" : "M") + x.toFixed(2) + "," + yy.toFixed(2);
+  }
+  return d;
+}
+
+// Each concept: draw(t, playing) returns SVG inner markup for a 24×24 box, in currentColor.
+// A chubby cartoon whale facing right, in the 24-unit box: big round head, short back sweeping
+// up into a little tail. Its belly runs down to y 21 so the sea can cover the lower part.
+const CUTE_BODY_D =
+  "M20.2,16.5 C20.4,11.4 17.4,8.5 13.4,8.5 C9.9,8.5 8.0,10.4 7.0,12.6 " +
+  "C6.3,11.6 5.6,10.4 5.2,9.3 C4.1,9.2 3.0,8.5 2.6,7.3 C3.8,7.3 4.8,7.7 5.5,8.3 " +
+  "C5.6,7.1 6.3,6.2 7.4,5.8 C7.4,7.1 7.0,8.4 6.4,9.2 C7.0,10.6 7.9,11.8 9.0,12.9 " +
+  "L9.0,21 L20.2,21 Z";
+const SEA_Y = 16.6;   // 20% of the whale (8.5 → ~19) under water
+
+// A humpback side-on, facing left, after the user's reference picture: knobbly flat head, long
+// plump body, the small fin on its hump, a narrow tail stock and an edge-on fluke. Points are in
+// a 1000-unit frame (snout at x 0) and joined into a smooth outline.
+const HB_TOP = [[2,412],[6,398],[40,381],[80,372],[122,364],[150,352],[172,347],[200,348],[260,339],
+  [330,335],[420,339],[500,338],[565,330],[600,318],[628,309],[646,310],[652,322],[690,348],
+  [760,376],[820,408],[858,440],[890,470],[935,500],[975,527],[1004,566]];
+const HB_FLUKE = [[985,566],[950,553],[920,545],[900,548],[888,566],[878,586],[866,576],[862,548],[858,520]];
+const HB_BELLY = [[820,503],[760,500],[700,515],[640,541],[600,557],[560,568],[480,577],[400,574],
+  [320,562],[260,551],[200,530],[160,508],[120,486],[80,471],[40,459],[18,443],[5,427]];
+function smooth(pts, closed) {
+  // Catmull-Rom through the points, as cubic Béziers.
+  const P = closed ? [pts[pts.length - 1], ...pts, pts[0], pts[1]] : [pts[0], ...pts, pts[pts.length - 1]];
+  let d = `M${pts[0][0]},${pts[0][1]}`;
+  const n = closed ? pts.length : pts.length - 1;
+  for (let i = 1; i <= n; i++) {
+    const [p0, p1, p2, p3] = [P[i - 1], P[i], P[i + 1], P[i + 2]];
+    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+    d += ` C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0]},${p2[1]}`;
+  }
+  return d + (closed ? " Z" : "");
+}
+const HB_BODY_D = smooth([...HB_TOP, ...HB_FLUKE, ...HB_BELLY], true);
+// Details cut out of the silhouette, so the tile shows through: the eye, the mouth line, two
+// throat pleats.
+const HB_MOUTH_D = smooth([[14,418],[70,428],[140,442],[205,462],[250,490]], false);
+const HB_PLEATS_D = smooth([[40,452],[120,474],[200,505],[270,535],[330,553]], false) + " "
+  + smooth([[60,462],[140,486],[215,518],[290,546]], false);
+const HB_EYE = [262, 428];
+const HB_BLOWHOLE = [196, 346];
+
+// The realistic version: the same outline with the fluke enlarged and lifted so it reads at icon
+// size, plus the long flippers, the pale throat and flank, pleats and head knobs.
+function liftTail(pts) {
+  const px = 852, py = 478, k = 1.35, a = -11 * Math.PI / 180;
+  return pts.map(([x, y]) => {
+    if (x < px) return [x, y];
+    const dx = (x - px) * k, dy = (y - py) * k;
+    return [Math.round(px + dx * Math.cos(a) - dy * Math.sin(a)), Math.round(py + dx * Math.sin(a) + dy * Math.cos(a))];
+  });
+}
+// The tail redrawn for the realistic whale: a narrow stock, then two pointed blades sweeping
+// back, one up and one down, with the notch between them, as a side-on humpback's fluke looks
+// when it's turned a little towards us.
+const HR_TAIL = [[860,440],[895,456],[930,452],[972,444],[1018,436],[1056,432],[1074,434],
+  [1052,448],[1030,458],[1010,470],[992,476],[976,488],[960,496],
+  [972,512],[986,532],[998,556],[1006,584],[1004,600],
+  [986,588],[964,566],[940,542],[915,522],[888,510],[860,506]];
+const HR_BODY_D = smooth([...HB_TOP.filter(([x]) => x <= 820), ...HR_TAIL, ...HB_BELLY], true);
+const HR_FLIPPER_NEAR_D = smooth([[338,478],[372,512],[410,556],[448,602],[484,642],[512,672],[530,690],
+  [522,699],[502,697],[488,684],[470,688],[456,670],[440,668],[426,648],[408,640],[396,618],[378,604],[362,574],[342,540],[326,510]], true);
+const HR_FLIPPER_FAR_D = smooth([[286,548],[300,590],[322,628],[348,656],[374,670],[388,664],[372,640],[352,606],[334,572],[318,548]], true);
+const HR_THROAT_D = smooth([[16,424],[70,434],[140,448],[205,467],[262,492],[330,512],[420,540],[520,556],[600,552],
+  [560,568],[480,577],[400,574],[320,562],[260,551],[200,530],[160,508],[120,486],[80,471],[40,459],[18,443]], true);
+const HR_FLANK_D = smooth([[640,500],[690,474],[745,468],[790,476],[760,494],[700,506]], true);
+const HR_PLEATS_D = [
+  [[60,456],[140,478],[215,507],[285,532],[350,548]],
+  [[90,468],[165,492],[235,520],[300,542]],
+  [[120,480],[190,505],[250,530]],
+].map(p => smooth(p, false)).join(" ");
+const HR_KNOBS = [[34,392],[58,384],[82,378],[106,372],[70,396],[96,389],[124,382]];
+
+const CONCEPTS = [
+  {
+    name: "Humpback blow",
+    blurb: "A humpback drawn after your reference: true proportions, long flippers, pale throat and flank, and a side-on tail with both blades showing. The Fluke concept's wave runs behind it. The animation is its blow: a bushy column of spray bursts up, billows and drifts back, then fades. Paused: no blow, still water.",
+    draw(t, on) {
+      const P = 3.2;
+      const f = on ? (t / P) % 1 : -1;
+      const sc = 0.0198;                       // reference units → 24ths
+      const x0 = 1.3, y0 = 5.9;                // blow top to flipper tip, centred
+      const bob = on ? 0.2 * Math.sin(TAU * t / 3.7) : 0;
+      const wavePh = on ? -TAU * t / 2.6 : 0;
+      const tile = "var(--tile)";
+      const k = 1 / sc;
+      const tf = `translate(${x0} ${(y0 + bob).toFixed(3)}) scale(${sc})`;
+      const sea = y0 + 560 * sc;               // the wave runs behind the belly
+      let s = `<path d="${wavePath(sea, 0.6, 6.5, wavePh, 0.8, 23.2)}" fill="none" stroke="currentColor" stroke-width="${W * 0.7}" stroke-linecap="round" opacity="0.45"/>`;
+      s += `<g transform="${tf}">`
+        + `<path d="${HR_FLIPPER_FAR_D}" fill="currentColor" opacity="0.55"/>`
+        + `<path d="${HR_BODY_D}" fill="currentColor"/>`
+        + `<path d="${HR_THROAT_D}" fill="${tile}" opacity="0.5"/>`
+        + `<path d="${HR_FLANK_D}" fill="${tile}" opacity="0.4"/>`
+        + `<path d="${HR_PLEATS_D}" fill="none" stroke="currentColor" stroke-width="${0.28 * k}" stroke-linecap="round" opacity="0.55"/>`
+        + `<path d="${HB_MOUTH_D}" fill="none" stroke="currentColor" stroke-width="${0.4 * k}" stroke-linecap="round"/>`
+        + HR_KNOBS.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="${0.26 * k}" fill="${tile}" opacity="0.7"/>`).join("")
+        + `<circle cx="${HB_EYE[0]}" cy="${HB_EYE[1]}" r="${0.5 * k}" fill="${tile}"/>`
+        + `<path d="${HR_FLIPPER_NEAR_D}" fill="currentColor" stroke="${tile}" stroke-width="${0.45 * k}" stroke-linejoin="round"/>`
+        + `</g>`;
+      // The blow: a burst of puffs from the blowhole, a narrow column widening into a bush.
+      if (on && f < 0.9) {
+        const bx = x0 + HB_BLOWHOLE[0] * sc, by = y0 + bob + HB_BLOWHOLE[1] * sc;
+        const rnd = mulberry(11);
+        for (let i = 0; i < 30; i++) {
+          const delay = 0.14 * (i / 30) + 0.02 * rnd();
+          const life = 0.6 + 0.12 * rnd();
+          const g = clamp((f - delay) / life);
+          if (g <= 0 || g >= 1) continue;
+          const rise = 1 - Math.pow(1 - g, 2.6);
+          const top = 0.12 + 0.88 * Math.pow((i % 10) / 9, 0.8) * (0.85 + 0.15 * rnd());
+          const h = 7.4 * top * rise;
+          const side = (rnd() - 0.5) * 2;
+          const spread = 0.15 + 1.8 * Math.pow(top, 1.6);
+          const x = bx + side * spread * rise + 1.0 * rise * top * top;
+          const y = by - 0.2 - h;
+          const r = 0.4 + (0.25 + 0.9 * top) * rise;
+          const o = clamp(g * 10) * Math.pow(1 - g, 1.25) * (0.42 + 0.28 * rnd()) * (1 - 0.3 * (1 - top));
+          s += `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${r.toFixed(2)}" fill="currentColor" opacity="${o.toFixed(3)}"/>`;
+        }
+      }
+      return s;
+    },
+  },
+  {
+    name: "Spouting whale",
+    blurb: "A chubby whale floating a fifth under gently rippling water. The spout is the animation: it rises in a little fountain, holds, then drips back. Paused: no spout, still water.",
+    draw(t, on) {
+      const P = 2.6;
+      const f = on ? (t / P) % 1 : -1;
+      const bob = on ? 0.28 * Math.sin(TAU * t / 3.3) : 0;
+      const wavePh = on ? -TAU * t / 2.6 : 0;
+      const tile = "var(--tile)";
+      let s = `<defs><clipPath id="sea-${this.uid}"><rect x="0" y="0" width="24" height="${SEA_Y}"/></clipPath></defs>`;
+      // The whale, above the water line only.
+      s += `<g clip-path="url(#sea-${this.uid})"><g transform="translate(0 ${bob.toFixed(2)})">`
+        + `<path d="${CUTE_BODY_D}" fill="currentColor"/>`
+        + `<circle cx="16.4" cy="12.2" r="0.95" fill="${tile}"/>`
+        + `<path d="M17.3,14.4 Q18.4,15.1 19.4,14.2" fill="none" stroke="${tile}" stroke-width="0.75" stroke-linecap="round"/>`
+        + `</g></g>`;
+      // The spout: grows from the blowhole, holds with a flutter, then drips and fades.
+      if (on) {
+        const grow = f < 0.22 ? ease(f / 0.22) : f < 0.58 ? 1 : f < 0.72 ? 1 - 0.35 * ease((f - 0.58) / 0.14) : 0;
+        const fade = f < 0.58 ? 1 : f < 0.72 ? 1 - ease((f - 0.58) / 0.14) : 0;
+        const flutter = f > 0.22 && f < 0.58 ? 0.06 * Math.sin(TAU * (f - 0.22) * 6) : 0;
+        if (grow > 0.01) {
+          const bx = 13.6, by = 8.7 + bob;
+          s += `<g opacity="${fade.toFixed(3)}" transform="translate(${bx} ${by.toFixed(2)}) scale(${(1 + flutter).toFixed(3)} ${grow.toFixed(3)}) translate(${-bx} ${(-by).toFixed(2)})">`
+            + `<path d="M${bx},${by.toFixed(2)} L${bx},${(by - 3.4).toFixed(2)}" stroke="currentColor" stroke-width="${W * 0.85}" stroke-linecap="round"/>`
+            + `<path d="M${bx},${(by - 3.2).toFixed(2)} C${bx - 0.4},${(by - 5.0).toFixed(2)} ${bx - 2.2},${(by - 5.4).toFixed(2)} ${bx - 2.9},${(by - 4.2).toFixed(2)}" fill="none" stroke="currentColor" stroke-width="${W * 0.85}" stroke-linecap="round"/>`
+            + `<path d="M${bx},${(by - 3.2).toFixed(2)} C${bx + 0.4},${(by - 5.0).toFixed(2)} ${bx + 2.2},${(by - 5.4).toFixed(2)} ${bx + 2.9},${(by - 4.2).toFixed(2)}" fill="none" stroke="currentColor" stroke-width="${W * 0.85}" stroke-linecap="round"/>`
+            + `</g>`;
+        }
+        // Two drops fall from the curls' tips as the spout dies away.
+        if (f > 0.5 && f < 0.9) {
+          const g = (f - 0.5) / 0.4;
+          const o = clamp(g * 6) * (1 - g);
+          for (const dx of [-3.1, 3.1]) {
+            const x = 13.6 + dx * (1 + 0.25 * g);
+            const y = 8.7 + bob - 4.0 + 9.5 * g * g;
+            s += `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="0.7" fill="currentColor" opacity="${o.toFixed(3)}"/>`;
+          }
+        }
+      }
+      // The sea: the Fluke concept's wave, unchanged.
+      s += `<path d="${wavePath(SEA_Y + 0.6, 0.7, 6.5, wavePh, 2.5, 21.5)}" fill="none" stroke="currentColor" stroke-width="${W}" stroke-linecap="round"/>`;
+      // Centre the drawing (spout top to wave, tail tip to head) in the box.
+      return `<g transform="translate(0.6 1.3)">${s}</g>`;
+    },
+  },
+  {
+    name: "Ripples",
+    blurb: "Rings spreading from a drop, like sonar or a whale's song through water. Paused: the drop and two still rings.",
+    draw(t, on) {
+      let s = "";
+      if (on) {
+        const P = 2.4;
+        for (let k = 0; k < 3; k++) {
+          const f = ((t / P) + k / 3) % 1;
+          const r = 2.6 + 7.4 * f;
+          const o = Math.pow(1 - f, 1.4) * clamp(f * 6);
+          s += `<circle cx="12" cy="12" r="${r.toFixed(2)}" fill="none" stroke="currentColor" stroke-width="${W}" opacity="${o.toFixed(3)}"/>`;
+        }
+        const pulse = 1.5 + 0.35 * Math.max(0, Math.cos(TAU * (t / P) * 3));
+        s += `<circle cx="12" cy="12" r="${pulse.toFixed(2)}" fill="currentColor"/>`;
+      } else {
+        s += `<circle cx="12" cy="12" r="5.2" fill="none" stroke="currentColor" stroke-width="${W}" opacity="0.9"/>`;
+        s += `<circle cx="12" cy="12" r="8.8" fill="none" stroke="currentColor" stroke-width="${W}" opacity="0.45"/>`;
+        s += `<circle cx="12" cy="12" r="1.5" fill="currentColor"/>`;
+      }
+      return s;
+    },
+  },
+  {
+    name: "Swell",
+    blurb: "Three wave lines rolling and swelling, the equaliser bars turned into sea. Paused: the waves settle and stop.",
+    draw(t, on) {
+      const P = 2.2;
+      let s = "";
+      [7.2, 12, 16.8].forEach((y, k) => {
+        const amp = on ? 1.25 + 0.65 * Math.sin(TAU * t / (P * 1.9) + k * 2.1) : 0.75;
+        const ph = on ? -TAU * t / P + k * 1.4 : k * 1.4;
+        s += `<path d="${wavePath(y, amp, 9.5, ph)}" fill="none" stroke="currentColor" stroke-width="${W}" stroke-linecap="round" stroke-linejoin="round"/>`;
+      });
+      return s;
+    },
+  },
+  {
+    name: "Bubbles",
+    blurb: "Three bubbles rising at their own pace, wobbling as they go, fading at the surface. Paused: they hang still.",
+    draw(t, on) {
+      const B = [ { x: 8, r: 2.0, P: 2.3, o: 0.0 }, { x: 13.5, r: 2.7, P: 2.9, o: 0.45 }, { x: 17.2, r: 1.5, P: 2.0, o: 0.75 } ];
+      let s = "";
+      for (const b of B) {
+        const f = on ? ((t / b.P) + b.o) % 1 : [0.55, 0.3, 0.75][B.indexOf(b)];
+        const y = 20.5 - b.r - f * (15 - b.r);
+        const x = b.x + (on ? 0.7 * Math.sin(TAU * f * 1.5 + b.o * 5) : 0);
+        const o = on ? clamp(f * 5) * clamp((1 - f) * 4) : 1;
+        s += `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${b.r}" fill="none" stroke="currentColor" stroke-width="${W * 0.85}" opacity="${o.toFixed(3)}"/>`;
+      }
+      return s;
+    },
+  },
+  {
+    name: "Fluke",
+    blurb: "The app icon's tail rises from a wave, holds, and slips back under. Paused: the tail stays up, still.",
+    draw(t, on) {
+      const P = 3.6;
+      const f = on ? (t / P) % 1 : 0.4;
+      // rise 0–.3, hold .3–.62, sink .62–.86, under .86–1
+      let h = f < 0.3 ? ease(f / 0.3) : f < 0.62 ? 1 : f < 0.86 ? 1 - ease((f - 0.62) / 0.24) : 0;
+      const sea = 16.6;
+      const dy = (1 - h) * 13;
+      const tilt = on ? (1 - h) * 6 : 0;
+      const scale = 0.285;  // icon units → 24ths: fluke ~14 wide
+      const wavePh = on ? -TAU * t / 2.6 : 0;
+      return `<defs><clipPath id="above-${this.uid}"><rect x="0" y="0" width="24" height="${sea + 0.2}"/></clipPath></defs>`
+        + `<g clip-path="url(#above-${this.uid})"><path d="${FLUKE_D}" fill="currentColor" transform="translate(12 ${(5.4 + dy).toFixed(2)}) rotate(${tilt.toFixed(2)}) scale(${scale}) translate(-54 -30.2)"/></g>`
+        + `<path d="${wavePath(sea + 0.6, 0.7, 6.5, wavePh, 2.5, 21.5)}" fill="none" stroke="currentColor" stroke-width="${W}" stroke-linecap="round"/>`;
+    },
+  },
+  {
+    name: "Whale song",
+    blurb: "The singing humpback from the library header, with arcs of song pulsing out ahead of it. Paused: the whale, silent.",
+    draw(t, on) {
+      const P = 2.0;
+      let s = `<g transform="translate(9.6 13.2) scale(0.255)"><path d="${FLIPPER_D}" fill="currentColor"/><path d="${BODY_D}" fill="currentColor"/></g>`;
+      if (on) {
+        for (let k = 0; k < 3; k++) {
+          const f = ((t / P) + k / 3) % 1;
+          const r = 1.6 + 5.2 * f;
+          const o = Math.pow(1 - f, 1.3) * clamp(f * 5);
+          const a = 0.75;  // half-angle, radians
+          const cx = 16.4, cy = 12.6;
+          const x1 = cx + r * Math.cos(-a), y1 = cy + r * Math.sin(-a);
+          const x2 = cx + r * Math.cos(a), y2 = cy + r * Math.sin(a);
+          s += `<path d="M${x1.toFixed(2)},${y1.toFixed(2)} A${r.toFixed(2)},${r.toFixed(2)} 0 0 1 ${x2.toFixed(2)},${y2.toFixed(2)}" fill="none" stroke="currentColor" stroke-width="${W * 0.85}" stroke-linecap="round" opacity="${o.toFixed(3)}"/>`;
+        }
+      }
+      return s;
+    },
+  },
+  {
+    name: "Today: dancing bars",
+    blurb: "Auxio's equaliser, for comparison: three bars jumping every 30 ms.",
+    draw(t, on) {
+      const hs = on ? [0, 1, 2].map(k => 0.25 + 0.75 * Math.abs(Math.sin(t * (5.1 + k * 1.7) + k))) : [0.5, 1, 0.7];
+      return hs.map((h, k) => { const hh = 16 * h; return `<rect x="${4 + k * 6}" y="${20 - hh}" width="4" height="${hh}" fill="currentColor"/>`; }).join("");
+    },
+  },
+];
+
+const cards = document.getElementById("cards");
+const views = [];
+CONCEPTS.forEach((c, i) => {
+  c.uid = i;
+  const card = document.createElement("section");
+  card.className = "card";
+  card.innerHTML = `<h2>${i <= 1 ? "New: " : i <= 6 ? (i - 1) + ". " : ""}${c.name}</h2><p>${c.blurb}</p>
+    <div class="stage">
+      <div class="big" style="color:var(--ink)"><svg viewBox="0 0 24 24"></svg></div>
+      <div class="grid" style="color:var(--ink)"><svg viewBox="0 0 24 24"></svg></div>
+    </div>
+    <div class="row"><div class="thumb" style="color:var(--ink)"><svg viewBox="0 0 24 24"></svg></div>
+      <div><div class="t">Second Movement: Breach</div><div class="s">Lumen Tide</div></div></div>`;
+  cards.appendChild(card);
+  views.push({ c, svgs: [...card.querySelectorAll("svg")] });
+});
+
+function now() { return playing ? pausedAt + (performance.now() - clockBase) / 1000 * speed : pausedAt; }
+function frame() {
+  const t = now();
+  for (const v of views) {
+    const inner = v.c.draw(t, playing);
+    for (const svg of v.svgs) svg.innerHTML = inner;
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const btnPlay = document.getElementById("play"), btnPause = document.getElementById("pause");
+function setPlaying(on) {
+  if (on === playing) return;
+  if (on) clockBase = performance.now(); else pausedAt = now();
+  playing = on;
+  btnPlay.setAttribute("aria-pressed", on); btnPause.setAttribute("aria-pressed", !on);
+}
+btnPlay.onclick = () => setPlaying(true);
+btnPause.onclick = () => setPlaying(false);
+const btnTheme = document.getElementById("theme");
+btnTheme.onclick = () => {
+  const dark = document.documentElement.classList.toggle("dark");
+  btnTheme.setAttribute("aria-pressed", dark);
+};
+document.getElementById("speed").oninput = e => {
+  pausedAt = now(); clockBase = performance.now();
+  speed = +e.target.value; document.getElementById("speedv").textContent = speed.toFixed(2) + "×";
+};
+document.getElementById("weight").oninput = e => {
+  W = +e.target.value; document.getElementById("weightv").textContent = W.toFixed(1);
+};
+</script>
+</body>
+</html>
