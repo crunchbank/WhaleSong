@@ -1,0 +1,5 @@
+• Favorite albums: tap the heart on an album's page, or use the album menu. Favorites get a coral heart on their cover.
+• A heart on the Albums tab shows only your favorites.
+• Favorites are backed up with your playlists and come back after a reinstall.
+• Your library appears in a few seconds instead of half a minute, then refreshes in the background.
+• Faster scans.

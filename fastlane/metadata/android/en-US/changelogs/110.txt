@@ -1,0 +1,3 @@
+• Albums, artists, genres and playlists can show as a grid of covers, with a toolbar switch between covers and the list
+• Artist and genre pages follow their tab's choice
+• Screen readers read covers out by name

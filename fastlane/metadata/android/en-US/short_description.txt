@@ -1,1 +1,1 @@
-A simple, rational music player
+A clean, simple music player, with favorite albums and the odd humpback whale
