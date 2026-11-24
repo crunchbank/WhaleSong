@@ -104,12 +104,7 @@ private data class IntelligentKnownName(override val raw: String, override val s
                 }
 
         // Transliterate to latin if available
-        if (
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
-                Transliterator.getAvailableIDs().toList().contains("Any-Latin")
-        ) {
-            stripped = Transliterator.getInstance("Any-Latin;").transliterate(stripped)
-        }
+        latin()?.let { stripped = it.transliterate(stripped) }
 
         // To properly compare numeric components in names, we have to split them up into
         // individual lexicographic and numeric tokens and then individually compare them
@@ -137,5 +132,21 @@ private data class IntelligentKnownName(override val raw: String, override val s
 
     companion object {
         private val TOKEN_REGEX by lazy { Regex("(\\d+)|(\\D+)") }
+
+        // WhaleSong: listing every transliterator and building a new Any-Latin one for each name
+        // took ~1 ms a name, most of the time a library takes to build (9 s for 7,700 songs on a
+        // Pixel 9 Pro). Whether it exists is now checked once, and each thread keeps its own
+        // transliterator, as they aren't safe to share between threads.
+        private val hasLatin by lazy {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+                Transliterator.getAvailableIDs().toList().contains("Any-Latin")
+        }
+        private val latinPerThread = ThreadLocal<Transliterator>()
+
+        private fun latin(): Transliterator? {
+            if (!hasLatin || Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return null
+            return latinPerThread.get()
+                ?: Transliterator.getInstance("Any-Latin;").also { latinPerThread.set(it) }
+        }
     }
 }

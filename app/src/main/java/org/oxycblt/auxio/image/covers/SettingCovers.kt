@@ -41,7 +41,15 @@ import org.oxycblt.musikr.covers.stored.NoTranscoding
 import org.oxycblt.musikr.covers.stored.StoredCovers
 
 interface SettingCovers {
-    suspend fun mutate(context: Context, revision: UUID): MutableCovers<out Cover>
+    /**
+     * @param verifyFolderCovers WhaleSong: false skips checking that folder covers (cover.jpg)
+     *   found by an earlier scan still exist, for a library that has to appear at once.
+     */
+    suspend fun mutate(
+        context: Context,
+        revision: UUID,
+        verifyFolderCovers: Boolean = true,
+    ): MutableCovers<out Cover>
 
     companion object {
         suspend fun immutable(context: Context): Covers<FDCover> =
@@ -51,7 +59,11 @@ interface SettingCovers {
 
 class SettingCoversImpl @Inject constructor(private val imageSettings: ImageSettings) :
     SettingCovers {
-    override suspend fun mutate(context: Context, revision: UUID): MutableCovers<out Cover> {
+    override suspend fun mutate(
+        context: Context,
+        revision: UUID,
+        verifyFolderCovers: Boolean,
+    ): MutableCovers<out Cover> {
         val coverStorage = CoverStorage.at(context.coversDir())
         val transcoding =
             when (imageSettings.coverMode) {
@@ -68,7 +80,7 @@ class SettingCoversImpl @Inject constructor(private val imageSettings: ImageSett
                 coverStorage,
                 revisionedTranscoding,
             )
-        val fsCovers = MutableFSCovers(context)
+        val fsCovers = MutableFSCovers(context, verifyFolderCovers)
         return MutableChainedCovers(storedCovers, fsCovers)
     }
 }

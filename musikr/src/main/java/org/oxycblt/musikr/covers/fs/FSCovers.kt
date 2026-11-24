@@ -77,6 +77,13 @@ class FSCovers(private val context: Context) : Covers<FDCover> {
             CoverResult.Miss()
         }
     }
+    /** WhaleSong: [obtain] without checking that the cover file still exists. */
+    internal fun trust(id: String): CoverResult<FDCover> =
+        if (id.startsWith(PREFIX)) {
+            CoverResult.Hit(FolderCoverImpl(context, id.substring(PREFIX.length).toUri()))
+        } else {
+            CoverResult.Miss()
+        }
 }
 
 /**
@@ -91,7 +98,13 @@ class FSCovers(private val context: Context) : Covers<FDCover> {
  *
  * @param context The [Context] to use to access the filesystem and check for ID validity.
  */
-class MutableFSCovers(private val context: Context) : MutableCovers<FDCover> {
+class MutableFSCovers(
+    private val context: Context,
+    // WhaleSong: false trusts that each cover found by an earlier scan is still there, for a
+    // library that has to appear at once. Opening each one through the file provider to check
+    // takes ~90 ms on a phone, ~9 s for a library with 800 album folders.
+    private val verify: Boolean = true,
+) : MutableCovers<FDCover> {
     private val inner = FSCovers(context)
 
     // WhaleSong: every song in an album shares its folder cover, and checking that the cover still
@@ -102,6 +115,7 @@ class MutableFSCovers(private val context: Context) : MutableCovers<FDCover> {
     private val checked = ConcurrentHashMap<String, CompletableDeferred<CoverResult<FDCover>>>()
 
     override suspend fun obtain(id: String): CoverResult<FDCover> {
+        if (!verify) return inner.trust(id)
         val mine = CompletableDeferred<CoverResult<FDCover>>()
         val existing = checked.putIfAbsent(id, mine)
         if (existing != null) return existing.await()

@@ -31,6 +31,10 @@ import org.oxycblt.auxio.image.covers.SettingCovers
 import org.oxycblt.auxio.music.MusicRepository.IndexingWorker
 import org.oxycblt.auxio.music.locations.LocationMode
 import org.oxycblt.auxio.music.shim.WriteOnlyMutableCache
+import org.oxycblt.auxio.whale.snapshot.LibrarySnapshot
+import org.oxycblt.auxio.whale.snapshot.ReadOnlyCache
+import org.oxycblt.auxio.whale.snapshot.RecordingFS
+import org.oxycblt.auxio.whale.snapshot.SnapshotFS
 import org.oxycblt.musikr.Config
 import org.oxycblt.musikr.IndexingProgress
 import org.oxycblt.musikr.Interpretation
@@ -249,6 +253,8 @@ constructor(
     private val updateListeners = mutableListOf<MusicRepository.UpdateListener>()
     private val indexingListeners = mutableListOf<MusicRepository.IndexingListener>()
     @Volatile private var indexingWorker: IndexingWorker? = null
+    // WhaleSong: the files the last scan of picked folders found, to show the library at once.
+    private val librarySnapshot = LibrarySnapshot(context)
 
     @Volatile override var library: MutableLibrary? = null
     @Volatile private var previousCompletedState: IndexingState.Completed? = null
@@ -398,18 +404,54 @@ constructor(
         L.d("Cache: $cache")
         val covers = settingCovers.mutate(context, newRevision)
         L.d("Covers: $covers")
+        val interpretation = Interpretation(nameFactory, separators)
+        // WhaleSong: with picked folders, walking them all through the file provider takes ~10 s
+        // for a large library. On the first load since the app started, show the library from
+        // the files the last scan found (and the song cache) at once, then scan as usual without
+        // the progress indicator and swap the result in only if something changed.
+        val safQuery = musicSettings.safQuery.takeIf { musicSettings.locationMode == LocationMode.SAF }
+        var shownFromSnapshot = false
+        if (withCache && safQuery != null && library == null) {
+            val files = librarySnapshot.load(safQuery.source)
+            if (files != null) {
+                L.d("Showing the library from a snapshot of ${files.size} files")
+                val quickStart = System.currentTimeMillis()
+                val quick =
+                    Musikr.new(
+                            context,
+                            Config(
+                                SnapshotFS(files),
+                                Storage(
+                                    ReadOnlyCache(cache),
+                                    settingCovers.mutate(context, newRevision, false),
+                                    storedPlaylists,
+                                ),
+                                interpretation,
+                            ),
+                        )
+                        .run(::emitIndexingProgress)
+                L.d("Snapshot library ready in ${System.currentTimeMillis() - quickStart}ms")
+                emitLibrary(quick.library)
+                emitIndexingCompletion(null)
+                shownFromSnapshot = true
+            }
+        }
         val fs =
             when (musicSettings.locationMode) {
-                LocationMode.SAF -> SAF.from(context, musicSettings.safQuery)
+                LocationMode.SAF ->
+                    RecordingFS(SAF.from(context, musicSettings.safQuery)) { found ->
+                        safQuery?.let { librarySnapshot.save(it.source, found) }
+                    }
                 LocationMode.MEDIA_STORE -> MediaStore.from(context, musicSettings.mediaStoreQuery)
             }
         L.d("FS: $fs")
         val storage = Storage(cache, covers, storedPlaylists)
-        val interpretation = Interpretation(nameFactory, separators)
         val config = Config(fs, storage, interpretation)
         L.d("Running index...")
         val start = System.currentTimeMillis()
-        val result = Musikr.new(context, config).run(::emitIndexingProgress)
+        val result =
+            Musikr.new(context, config)
+                .run(if (shownFromSnapshot) { _ -> } else ::emitIndexingProgress)
         L.d("Index finished in ${System.currentTimeMillis() - start}ms")
         // Music loading completed, update the revision right now so we re-use this work
         // later.
