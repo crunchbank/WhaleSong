@@ -1,0 +1,2 @@
+• The playing indicator is now ripples spreading from a drop, instead of dancing bars. Paused, the ripples rest, faded.
+• New screenshots, with a whale-themed demo library.
