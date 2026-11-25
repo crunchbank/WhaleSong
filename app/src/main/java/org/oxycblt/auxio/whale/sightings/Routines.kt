@@ -77,8 +77,9 @@ internal abstract class Routine {
     companion object {
         const val LEFT = 8f
         const val SEA_END = 142f
-        /** The whales' scale: 1.5× a real humpback's proportions against the bar, as tuned. */
-        const val SIZE = 1.5f
+        /** The whales' scale: 1.5× a real humpback's proportions against the bar, as tuned, then
+         * a quarter bigger again (WhaleSong 1.5). */
+        const val SIZE = 1.875f
         /** "Out of the water" 1.65×: how high a resting whale floats. */
         const val TOP = 1.6f - (1.65f - 1f) * 3.2f
         const val DEEP = 20f
@@ -224,19 +225,29 @@ internal class CruiseRoutine : Routine() {
     }
 
     private val mother =
-        Whale(SIZE, 0f, -3f, 0f, false, 0.5f, 2.0f, 10.4f, 5.6f, 0.45f, 1.8f, 0f, emptyList(),
+        Whale(SIZE * BIG, 0f, -3f, 0f, false, 0.5f, 2.0f, 10.4f, 5.6f, 0.45f, 1.8f, 0f, emptyList(),
             floatArrayOf(2.9f), 1f)
     private val calf =
-        Whale(SIZE * 0.55f, 0.6f * 22f * SIZE, -5.5f, 0.8f, true, 1.0f, 1.8f, 11.0f, 5.0f, 0.4f,
+        Whale(SIZE * BIG * 0.55f, 0.6f * 22f * SIZE * BIG, -5.5f, 0.8f, true, 1.0f, 1.8f, 11.0f, 5.0f, 0.4f,
             1.25f, 0.7f, listOf(floatArrayOf(5.4f, 2.8f)), floatArrayOf(2.2f, 8.3f), 0.55f)
     private val whales = listOf(mother, calf)
 
     private fun swimX(t: Float) = 36f + 3.2f * t
 
+    private companion object {
+        /** The mother and calf are drawn this much larger than the other sightings' whale. */
+        const val BIG = 1.28f
+        /** And float this much higher (dp at the mother's size), so more of them shows. */
+        const val LIFT = 1.5f
+        /** The size their wakes, dips, lift and blows are measured against: the sightings' size
+         * before WhaleSong 1.5 made the others bigger, so the pair stays as approved. */
+        const val REF = 1.5f
+    }
+
     /** part: 0 all, 1 the path alone, 2 the bob alone. */
     private fun depthOf(w: Whale, t: Float, part: Int = 0): Float {
-        val k = w.scale / SIZE
-        val top = TOP * k - w.ride
+        val k = w.scale / REF
+        val top = TOP * k - w.ride - LIFT * k
         val up = smoother((t - w.up) / w.upDur)
         val down = smoother((t - w.sink) / w.sinkDur).pow(2.4f)
         val d = lerp(DEEP, top, up * (1f - down))
@@ -265,7 +276,7 @@ internal class CruiseRoutine : Routine() {
         val noseDown = climb * smoother(climb / 9f)
         s.dive = 10f * smoother((t - w.sink - 0.1f) / 4.0f) + noseDown
         s.angle = -3f + (climb - noseDown) + 0.15f * atan2(vb, 12f) * DEG
-        val k = w.scale / SIZE
+        val k = w.scale / REF
         s.out = 1f - smoother((s.depth - 2f * k) / (DEEP - 2f * k))
         s.stir = smoother((t - w.up + 0.2f) / 1.2f) * (1f - smoother((t - w.sink - 1.2f) / 3.0f))
         return s
@@ -276,7 +287,7 @@ internal class CruiseRoutine : Routine() {
         for (i in whales.indices) {
             val w = whales[i]
             val s = ss[i]
-            val k = w.scale / SIZE
+            val k = w.scale / REF
             val d = x - (s.x + 6f * w.scale)
             h += (s.stir * 0.9f + s.out * 1.4f) * k * 0.5f * exp(-(d * d) / (160f * k))
         }
@@ -306,7 +317,7 @@ internal class CruiseRoutine : Routine() {
     init {
         fun add(w: Whale, t: Float, dx: Float, a: Float, sigma: Float) {
             val s = stateOf(w, t, State())
-            sea.add(t, s.x + dx * w.scale, a * w.scale / SIZE, sigma)
+            sea.add(t, s.x + dx * w.scale, a * w.scale / REF, sigma)
         }
         add(mother, 0.7f, 6f, 2.2f, 6f) // the water stirs
         add(mother, 1.45f, 16f, 4.0f, 5f) // her head breaks the surface
@@ -322,7 +333,7 @@ internal class CruiseRoutine : Routine() {
             var t = 2.6f
             while (t < 10.6f) {
                 val s = stateOf(w, t, State())
-                if (s.out >= 0.8f) sea.add(t, s.x + 22f * w.scale, 0.55f * w.scale / SIZE, 3.5f)
+                if (s.out >= 0.8f) sea.add(t, s.x + 22f * w.scale, 0.55f * w.scale / REF, 3.5f)
                 t += 0.85f
             }
         }
@@ -358,7 +369,7 @@ internal class CruiseRoutine : Routine() {
                 if (a < 0f || a > 3.2f) continue
                 matrixOf(w, now[i], now, chain).map(Humpback.BLOWHOLE[0], Humpback.BLOWHOLE[1], pt)
                 val o = blewAt[i][j]
-                Draw.spout(c, a, pt[0], min(pt[1], stage.surface(pt[0])), o[0], o[1], w.blowScale, SIZE, ink, paint)
+                Draw.spout(c, a, pt[0], min(pt[1], stage.surface(pt[0])), o[0], o[1], w.blowScale, REF, ink, paint)
             }
         }
     }

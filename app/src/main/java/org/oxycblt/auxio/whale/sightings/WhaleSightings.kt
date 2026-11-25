@@ -325,6 +325,7 @@ class WhaleSightings(
         private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
         private val ink = Ink()
         private val seaPath = Path()
+        private val underPath = Path()
         private val above = Path()
         private var ys = FloatArray(0)
         private var count = 0
@@ -365,7 +366,11 @@ class WhaleSightings(
             // thumb's gap.
             val seaStart = trackLeft - half
             val seaEnd = thumbX - thumbClearance()
-            if (seaEnd - seaStart < 2f * half) return
+            // WhaleSong 1.5: the sea runs a little deeper than the line, below the same surface,
+            // so there's more water to slosh about. Its rounded ends grow to match.
+            val seaBottom = cy + half + SEA_DEEPER_DP * d
+            val cap = (seaBottom - waterPx) / 2f
+            if (seaEnd - seaStart < 2f * cap) return
             val seaDp = (seaEnd - seaStart) / d
             unit = scale * d
             step = d
@@ -434,17 +439,38 @@ class WhaleSightings(
 
             // The sea: the played line, its top edge the water.
             seaPath.reset()
-            seaPath.moveTo(seaStart + half, cy + half)
-            seaPath.arcTo(seaStart, cy - half, seaStart + 2f * half, cy + half, 90f, 180f, false)
+            seaPath.moveTo(seaStart + cap, seaBottom)
+            seaPath.arcTo(seaStart, waterPx, seaStart + 2f * cap, seaBottom, 90f, 180f, false)
             for (i in 0 until count) {
                 val px = min(seaStart + i * step, seaEnd)
-                if (px < seaStart + half || px > seaEnd - half) continue
+                if (px < seaStart + cap || px > seaEnd - cap) continue
                 seaPath.lineTo(px, ys[i])
             }
-            seaPath.lineTo(seaEnd - half, cy - half)
-            seaPath.arcTo(seaEnd - 2f * half, cy - half, seaEnd, cy + half, -90f, 180f, false)
+            seaPath.lineTo(seaEnd - cap, waterPx)
+            seaPath.arcTo(seaEnd - 2f * cap, waterPx, seaEnd, seaBottom, -90f, 180f, false)
             seaPath.close()
             canvas.drawPath(seaPath, ink.fill(paint, ink.track))
+
+            // WhaleSong 1.5: faint ripples under the surface, so the deeper sea reads as water.
+            // They have no motion of their own: each follows the surface's rise and fall (the
+            // swell a whale pushes up, the ripples from its blow and dive), damped with depth.
+            canvas.save()
+            canvas.clipPath(seaPath)
+            for (j in UNDER_DEPTHS_DP.indices) {
+                val base = waterPx + UNDER_DEPTHS_DP[j] * d
+                val damp = UNDER_DAMPING[j]
+                underPath.reset()
+                var started = false
+                for (i in 0 until count) {
+                    val px = min(seaStart + i * step, seaEnd)
+                    if (px < seaStart + cap || px > seaEnd - cap) continue
+                    val y = base + (ys[i] - waterPx) * damp
+                    if (started) underPath.lineTo(px, y) else underPath.moveTo(px, y)
+                    started = true
+                }
+                canvas.drawPath(underPath, ink.stroke(paint, ink.foam, UNDER_WIDTH_DP * d, UNDER_OPACITY[j]))
+            }
+            canvas.restore()
 
             canvas.save()
             toRoutine(canvas)
@@ -463,6 +489,14 @@ class WhaleSightings(
     }
 
     private companion object {
+        /** How much deeper than the line the sea is drawn, below the same surface. */
+        const val SEA_DEEPER_DP = 3f
+        /** The ripples under the surface: how far down each lies, how much of the surface's
+         * movement it follows, and how strongly it shows. */
+        val UNDER_DEPTHS_DP = floatArrayOf(2.3f, 4.6f)
+        val UNDER_DAMPING = floatArrayOf(0.6f, 0.35f)
+        val UNDER_OPACITY = floatArrayOf(0.45f, 0.28f)
+        const val UNDER_WIDTH_DP = 0.75f
         const val POLL_MS = 1_000L
         const val QUEUE_DELAY_MS = 400L
         const val MIN_GAP_MS = 20_000L

@@ -1,2 +1,4 @@
 • The playing indicator is now ripples spreading from a drop, instead of dancing bars. Paused, the ripples rest, faded.
+• Bigger whale sightings: every whale is a quarter larger, and the mother and calf larger still, riding higher in the water.
+• A deeper sea, with faint ripples under the surface that move with the whales.
 • New screenshots, with a whale-themed demo library.
